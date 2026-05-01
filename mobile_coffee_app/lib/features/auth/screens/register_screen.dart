@@ -292,7 +292,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   value: _enableBiometric,
-                  activeColor: Colors.white,
+                  activeThumbColor: Colors.white,
                   activeTrackColor: Colors.brown[600],
                   inactiveThumbColor: Colors.grey[400],
                   inactiveTrackColor: Colors.grey[200],

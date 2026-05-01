@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
-// Import halaman Login sebagai pintu masuk utama
-import 'features/auth/screens/login_screen.dart';
+import 'package:provider/provider.dart'; // 🔥 Import Provider
+import 'features/auth/screens/welcome_screen.dart';
+import 'core/utils/point_provider.dart'; // 🔥 Sesuaikan path ke file PointProvider kamu
 
-
-
-// 🔥 PERBAIKAN: Ubah main() menjadi async
 void main() async {
-  // 🔥 WAJIB DITAMBAHKAN KARENA KITA MENGGUNAKAN FUNGSI ASYNC SEBELUM RUNAPP
+  // Wajib ditambahkan karena menggunakan fungsi async sebelum runApp
   WidgetsFlutterBinding.ensureInitialized();
 
-  
-  runApp(const MainApp());
+  runApp(
+    // 🔥 Bungkus MainApp dengan MultiProvider agar state poin bisa diakses di semua screen
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PointProvider()),
+      ],
+      child: const MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {
@@ -22,13 +27,16 @@ class MainApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Caffio App',
       theme: ThemeData(
-        // Kita set tema utama ke warna Cokelat (Brown) agar sesuai tema Cafe
+        // Tema utama Cokelat (Brown) khas Caffio
         primarySwatch: Colors.brown,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.brown,
+          primary: Colors.brown[700],
+        ),
         useMaterial3: true,
       ),
-      // Halaman pertama yang muncul adalah LoginScreen
-      home: const LoginScreen(),
+      // Halaman pertama yang muncul adalah WelcomeScreen
+      home: const WelcomeScreen(),
     );
   }
 }

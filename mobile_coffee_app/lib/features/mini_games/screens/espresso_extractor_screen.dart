@@ -2,6 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:proximity_sensor/proximity_sensor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// 🔥 TAMBAHAN IMPORT UNTUK API
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../../../core/config/api_config.dart'; // Sesuaikan path config API kamu
 
 class EspressoExtractorScreen extends StatefulWidget {
   const EspressoExtractorScreen({super.key});
@@ -34,11 +38,52 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
     super.dispose();
   }
 
-  // --- LOGIKA UTAMA (TIDAK DIUBAH) ---
+  // 🔥 FUNGSI BARU: SIMPAN KE DATABASE & AKTIVITAS
+  Future<void> _savePointsToDatabase(int poinDidapat, String namaGame) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? savedEmail = prefs.getString('user_email');
+      if (savedEmail == null) return;
+
+      var url = Uri.parse('${ApiConfig.baseUrl}/auth/add-points');
+
+      var response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": savedEmail,
+          "poin_tambahan": poinDidapat,
+          "nama_game": namaGame,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print("Poin berhasil disimpan ke database!");
+      } else {
+        print("Gagal API Poin: ${response.body}");
+      }
+    } catch (e) {
+      print("Error API Poin: $e");
+    }
+  }
+
   Future<void> _addPoints() async {
     final prefs = await SharedPreferences.getInstance();
-    int currentPoints = prefs.getInt('total_points') ?? 0;
-    await prefs.setInt('total_points', currentPoints + 2);
+    String? savedEmail = prefs.getString('user_email');
+    
+    if (savedEmail != null) {
+      // Simpan ke key spesifik akun yang sedang login
+      String key = 'total_points_$savedEmail';
+      int currentPoints = prefs.getInt(key) ?? prefs.getInt('total_points') ?? 0;
+      await prefs.setInt(key, currentPoints + 2);
+    } else {
+      // Fallback jika email tidak ditemukan
+      int currentPoints = prefs.getInt('total_points') ?? 0;
+      await prefs.setInt('total_points', currentPoints + 2);
+    }
+
+    // Ganti teks "Nama Game" sesuai dengan file gamenya (Espresso Extractor / Barista Balance)
+    await _savePointsToDatabase(2, "Espresso Extractor"); 
   }
 
   void _initProximitySensor() {
@@ -191,7 +236,6 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
     );
   }
 
-  // --- UI BARU ---
   @override
   Widget build(BuildContext context) {
     Color heatColor = Colors.green;
@@ -216,7 +260,6 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Status Teks
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -245,8 +288,6 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-
-              // Bar Ekstraksi Kopi
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -294,8 +335,6 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
                       ),
                     ),
                     const SizedBox(height: 25),
-
-                    // Bar Suhu Mesin
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -329,13 +368,11 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
                 ),
               ),
               const SizedBox(height: 50),
-
-              // Ikon Mesin
               Transform.translate(
                 offset: Offset(
                   (_heatLevel > 80 && _isNear) ? (_heatLevel % 3 - 1.5) * 3 : 0,
                   0,
-                ), // Efek getar lebih *smooth*
+                ),
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -352,8 +389,6 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
                 ),
               ),
               const SizedBox(height: 50),
-
-              // Tombol Mulai
               if (!_isPlaying)
                 SizedBox(
                   width: double.infinity,

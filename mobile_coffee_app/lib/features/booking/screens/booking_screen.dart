@@ -158,6 +158,37 @@ class _BookingScreenState extends State<BookingScreen> {
                       ? 'Silakan pilih meja terlebih dahulu!'
                       : null,
                 ),
+
+                // 🔥 KOTAK NOTES UNTUK ROMBONGAN > 6 ORANG
+                Container(
+                  margin: const EdgeInsets.only(
+                    top: 25,
+                  ), // Jarak dari dropdown atasnya
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors
+                        .orange[50], // Latar belakang senada dengan tema Caffio
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.orange[200]!),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.orange),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          "Catatan Reservasi: Kapasitas per meja maksimal 6 orang. Jika rombongan Anda lebih dari 6 orang, silakan pilih meja mana saja yang tersedia. Jangan khawatir, pelayan kami akan menggabungkan meja Anda saat tiba di lokasi.",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.brown[800],
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

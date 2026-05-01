@@ -264,11 +264,6 @@ class _MenuScreenState extends State<MenuScreen> {
                               ],
                             ),
                             const SizedBox(width: 10),
-                            const CircleAvatar(
-                              backgroundImage: NetworkImage(
-                                'https://i.pravatar.cc/150?img=32',
-                              ), // Avatar Dummy
-                            ),
                           ],
                         ),
                       ],

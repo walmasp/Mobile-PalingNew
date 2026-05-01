@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:light/light.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// 🔥 TAMBAHAN IMPORT UNTUK API
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../../../core/config/api_config.dart';
 
 class BaristaBalanceScreen extends StatefulWidget {
   const BaristaBalanceScreen({super.key});
@@ -40,11 +44,53 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
     super.dispose();
   }
 
-  // --- LOGIKA UTAMA (TIDAK DIUBAH) ---
+  // 🔥 FUNGSI BARU: SIMPAN KE DATABASE & AKTIVITAS
+  Future<void> _savePointsToDatabase(int poinDidapat, String namaGame) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? savedEmail = prefs.getString('user_email');
+      if (savedEmail == null) return;
+
+      // Tambahkan /auth di tengahnya
+      var url = Uri.parse('${ApiConfig.baseUrl}/auth/add-points');
+
+      var response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": savedEmail,
+          "poin_tambahan": poinDidapat,
+          "nama_game": namaGame,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print("Poin berhasil disimpan ke database!");
+      } else {
+        print("Gagal API Poin: ${response.body}");
+      }
+    } catch (e) {
+      print("Error API Poin: $e");
+    }
+  }
+
   Future<void> _addPoints() async {
     final prefs = await SharedPreferences.getInstance();
-    int currentPoints = prefs.getInt('total_points') ?? 0;
-    await prefs.setInt('total_points', currentPoints + 2);
+    String? savedEmail = prefs.getString('user_email');
+    
+    if (savedEmail != null) {
+      // Simpan ke key spesifik akun yang sedang login
+      String key = 'total_points_$savedEmail';
+      int currentPoints = prefs.getInt(key) ?? prefs.getInt('total_points') ?? 0;
+      await prefs.setInt(key, currentPoints + 2);
+    } else {
+      // Fallback jika email tidak ditemukan
+      int currentPoints = prefs.getInt('total_points') ?? 0;
+      await prefs.setInt('total_points', currentPoints + 2);
+    }
+
+    // Ganti teks "Nama Game" sesuai dengan file gamenya (Espresso Extractor / Barista Balance)
+    await _savePointsToDatabase(2, "Coffee Balance"); 
   }
 
   void _initLightSensor() {
@@ -205,7 +251,6 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
     );
   }
 
-  // --- UI BARU ---
   @override
   Widget build(BuildContext context) {
     Color bgColor = _isDarkMode ? const Color(0xFF1A1A1A) : Colors.grey[50]!;
@@ -231,7 +276,6 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Status Sensor Cahaya
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
@@ -268,8 +312,6 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
               ),
             ),
             const SizedBox(height: 40),
-
-            // Teks Instruksi
             Text(
               _isPlaying
                   ? "Keep it balanced!"
@@ -283,8 +325,6 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
               ),
             ),
             const SizedBox(height: 15),
-
-            // Timer
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               decoration: BoxDecoration(
@@ -301,8 +341,6 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
               ),
             ),
             const SizedBox(height: 60),
-
-            // Area Gelas Kopi
             Container(
               width: 180,
               height: 180,
@@ -329,8 +367,6 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
               ),
             ),
             const SizedBox(height: 60),
-
-            // Tombol Mulai
             if (!_isPlaying)
               SizedBox(
                 width: 200,

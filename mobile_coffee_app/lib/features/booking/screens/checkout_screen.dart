@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_coffee_app/shared/layout/main_navigation_screen.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/services/booking_service.dart';
 import '../../../data/services/table_service.dart';
-// 🔥 IMPORT SERVICE NOTIFIKASI
 import '../../../data/services/notification_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -148,9 +148,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.remove('cart_cafe_${widget.cafeId}');
                   setStateDialog(() => isPaid = true);
+
                   Future.delayed(const Duration(seconds: 2), () {
-                    if (Navigator.canPop(context)) Navigator.pop(context);
-                    Navigator.popUntil(context, (route) => route.isFirst);
+                    // 🔥 PERBAIKAN NAVIGASI KE MAIN NAVIGATION SCREEN
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MainNavigationScreen(),
+                      ),
+                      (route) => false,
+                    );
                   });
                 }
               });

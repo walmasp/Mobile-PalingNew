@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart'; 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../../core/config/api_config.dart'; // Sesuaikan path ini dengan letak file api_config.dart kamu
 
 // 🔥 IMPORT LOGIN SCREEN (Pastikan path ini sesuai dengan folder kamu)
 import '../../auth/screens/login_screen.dart';
@@ -18,11 +21,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _nama = "Memuat...";
   String _email = "Memuat...";
   String _kesanPesan = "Memuat...";
-  String? _imagePath;
-  int _totalPoints = 0;
+  String? _imagePath; 
+  int _totalPoints = 0; 
 
   final TextEditingController _bioController = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
+  final ImagePicker _picker = ImagePicker(); 
 
   @override
   void initState() {
@@ -30,23 +33,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
   }
 
-  // --- LOGIKA UTAMA (TIDAK DIUBAH) ---
+  // --- LOGIKA UTAMA (DIUBAH AGAR SPESIFIK PER AKUN) ---
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _nama = prefs.getString('user_name') ?? "Guest User";
-      _email = prefs.getString('user_email') ?? "guest@caffio.com";
-      _kesanPesan =
-          prefs.getString('user_bio') ??
-          "Halo! Saya sangat suka kopi dan tempat estetik.";
-      _imagePath = prefs.getString('user_image');
-      _totalPoints = prefs.getInt('total_points') ?? 0;
+      _nama = prefs.getString('user_name') ?? "Guest User"; 
+      _email = prefs.getString('user_email') ?? "guest@caffio.com"; 
+      _kesanPesan = prefs.getString('user_bio_$_email') ?? "Halo! Saya sangat suka kopi dan tempat estetik."; 
+      _imagePath = prefs.getString('user_image_$_email'); 
+      _totalPoints = prefs.getInt('total_points_$_email') ?? 0; 
     });
+
+    // Panggil fungsi API database SETELAH state email didapatkan
+    if (_email != "guest@caffio.com") {
+      _fetchRealPointsFromDB();
+    }
+  }
+
+  // Fungsi baru untuk menarik poin asli dari database
+  Future<void> _fetchRealPointsFromDB() async {
+    try {
+      var url = Uri.parse('${ApiConfig.baseUrl}/auth/get-poin');
+      var response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": _email}), // Cari poin berdasarkan email
+      );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        int realPoints = data['poin'] ?? 0;
+
+        // Perbarui tampilan poin di layar
+        setState(() {
+          _totalPoints = realPoints;
+        });
+
+        // Sinkronkan dengan SharedPreferences lokal agar tidak hilang saat offline
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('total_points_$_email', realPoints);
+      } else {
+        print("Gagal fetch poin: ${response.body}");
+      }
+    } catch (e) {
+      print("Error mengambil poin dari database: $e");
+    }
   }
 
   Future<void> _usePoints() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('total_points', 0);
+    await prefs.setInt('total_points_$_email', 0); // Reset poin khusus akun ini
+    
+    // Opsional: Hapus kunci global lama jika ada biar bersih
+    await prefs.remove('total_points'); 
+
     setState(() {
       _totalPoints = 0;
     });
@@ -68,9 +108,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (pickedFile != null) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_image', pickedFile.path);
+        // 🔥 PERBAIKAN: Simpan foto berdasarkan email
+        await prefs.setString('user_image_$_email', pickedFile.path); 
         setState(() {
-          _imagePath = pickedFile.path;
+          _imagePath = pickedFile.path; 
         });
       }
     } catch (e) {
@@ -80,9 +121,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _saveKesanPesan(String newBio) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_bio', newBio);
+    // 🔥 PERBAIKAN: Simpan bio berdasarkan email
+    await prefs.setString('user_bio_$_email', newBio); 
     setState(() {
-      _kesanPesan = newBio;
+      _kesanPesan = newBio; 
     });
   }
 
@@ -101,41 +143,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
           controller: _bioController,
           maxLines: 3,
           decoration: InputDecoration(
-            hintText: "Tulis sesuatu tentang dirimu...",
+            hintText: "Tulis kesan & pesanmu di sini...",
             filled: true,
             fillColor: Colors.grey[50],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: BorderSide.none,
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Batal",
-              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
-            ),
+            child: const Text("Batal", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.brown[700],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             ),
             onPressed: () {
               _saveKesanPesan(_bioController.text);
               Navigator.pop(context);
             },
-            child: const Text(
-              "Simpan",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: const Text("Simpan", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -152,47 +180,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.logout, color: Colors.redAccent),
             SizedBox(width: 10),
-            Text(
-              "Konfirmasi Logout",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text("Konfirmasi Logout", style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         content: const Text("Apakah kamu yakin ingin keluar dari aplikasi?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Batal",
-              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
-            ),
+            child: const Text("Batal", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             ),
             onPressed: () async {
               final prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
-
+              
+              // Hapus token sesi login (Tapi JANGAN hapus bio/foto pakai clear() agar terekam)
+              await prefs.remove('token'); 
+              await prefs.remove('user_name');
+              await prefs.remove('user_email');
+              
               if (!mounted) return;
-
+              
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
                 (route) => false,
               );
             },
-            child: const Text(
-              "Ya, Keluar",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: const Text("Ya, Keluar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -203,35 +221,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Background terang elegan
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          "My Profile",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text("Profil Saya", style: TextStyle(fontWeight: FontWeight.bold)), 
         backgroundColor: Colors.grey[50],
         foregroundColor: Colors.brown[800],
         elevation: 0,
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10), 
         child: Column(
           children: [
-            // --- BAGIAN HEADER PROFIL (Foto, Nama, Email) ---
+            // --- BAGIAN HEADER PROFIL ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
               ),
               child: Column(
                 children: [
@@ -241,7 +250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       GestureDetector(
                         onTap: _pickProfileImage,
                         child: Container(
-                          padding: const EdgeInsets.all(4), // Border effect
+                          padding: const EdgeInsets.all(4), 
                           decoration: BoxDecoration(
                             color: Colors.brown[100],
                             shape: BoxShape.circle,
@@ -249,16 +258,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: CircleAvatar(
                             radius: 50,
                             backgroundColor: Colors.brown[50],
-                            backgroundImage: _imagePath != null
-                                ? FileImage(File(_imagePath!))
-                                : null,
-                            child: _imagePath == null
-                                ? const Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: Colors.brown,
-                                  )
-                                : null,
+                            backgroundImage: _imagePath != null ? FileImage(File(_imagePath!)) : null,
+                            child: _imagePath == null ? const Icon(Icons.person, size: 50, color: Colors.brown) : null,
                           ),
                         ),
                       ),
@@ -269,34 +270,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 3),
                         ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.white,
-                          size: 16,
-                        ),
+                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
                       ),
                     ],
                   ),
                   const SizedBox(height: 15),
-                  Text(
-                    _nama,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  Text(_nama, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)), 
                   const SizedBox(height: 5),
-                  Text(
-                    _email,
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                  ),
+                  Text(_email, style: TextStyle(fontSize: 14, color: Colors.grey[500])), 
                 ],
               ),
             ),
             const SizedBox(height: 25),
 
-            // --- KARTU POIN REWARD (Desain Premium) ---
+            // --- KARTU POIN REWARD ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(25),
@@ -307,13 +294,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.brown.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+                boxShadow: [BoxShadow(color: Colors.brown.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,40 +305,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "Caffio Rewards",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
+                          Text("Caffio Rewards", style: TextStyle(color: Colors.white70, fontSize: 14)),
                           SizedBox(height: 5),
-                          Text(
-                            "My Points",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          Text("Poin Saya", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          "$_totalPoints / 200",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                        child: Text("$_totalPoints / 200", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -367,9 +323,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: LinearProgressIndicator(
                       value: (_totalPoints / 200).clamp(0.0, 1.0),
                       backgroundColor: Colors.white.withOpacity(0.2),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Colors.white,
-                      ),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                       minHeight: 8,
                     ),
                   ),
@@ -385,7 +339,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 15),
 
-            // --- TOMBOL KLAIM HADIAH (Muncul jika poin >= 200) ---
+            // --- TOMBOL KLAIM HADIAH ---
             if (_totalPoints >= 200)
               Container(
                 margin: const EdgeInsets.only(bottom: 20),
@@ -395,44 +349,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   border: Border.all(color: Colors.orange[200]!),
                 ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 5,
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                   leading: Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.orange[100],
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.card_giftcard,
-                      color: Colors.orange,
-                    ),
+                    decoration: BoxDecoration(color: Colors.orange[100], shape: BoxShape.circle),
+                    child: const Icon(Icons.card_giftcard, color: Colors.orange),
                   ),
-                  title: const Text(
-                    "Voucher Diskon 50%",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  title: const Text("Voucher Diskon 50%", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
                   trailing: ElevatedButton(
                     onPressed: _usePoints,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      "Klaim",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: const Text("Klaim", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -444,13 +375,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,21 +383,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "About Me",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
+                      // 🔥 SUDAH DIUBAH MENJADI KESAN & PESAN
+                      const Text("Kesan & Pesan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
                       GestureDetector(
                         onTap: _showEditBioDialog,
-                        child: const Icon(
-                          Icons.edit_square,
-                          color: Colors.brown,
-                          size: 20,
-                        ),
+                        child: const Icon(Icons.edit_square, color: Colors.brown, size: 20),
                       ),
                     ],
                   ),
@@ -480,19 +395,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(15),
-                    ),
+                    decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(15)),
                     child: Text(
                       _kesanPesan,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
-                        color: Colors.grey[700],
-                        height: 1.5,
-                      ),
-                    ),
+                      style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: Colors.grey[700], height: 1.5),
+                    ), 
                   ),
                 ],
               ),
@@ -509,15 +416,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   foregroundColor: Colors.redAccent,
                   elevation: 0,
                   side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
                 icon: const Icon(Icons.logout),
-                label: const Text(
-                  "Log Out",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                label: const Text("Keluar", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 onPressed: _logout,
               ),
             ),
