@@ -3,6 +3,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 🔥 TAMBAHAN IMPORT SECURE STORAGE
 
 import '../../../shared/layout/main_navigation_screen.dart';
 import 'register_screen.dart';
@@ -26,14 +27,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final LocalAuthentication auth = LocalAuthentication();
   bool canCheckBiometrics = false;
   List<BiometricType> availableBiometrics = [];
+  
+  // 🔥 TAMBAHAN INSTANCE SECURE STORAGE
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   @override
   void initState() {
     super.initState();
-    checkBiometrics(); //[cite: 9]
+    checkBiometrics(); 
   }
 
-  // --- LOGIKA UTAMA (TIDAK DIUBAH SAMA SEKALI) ---[cite: 9]
+  // --- LOGIKA CEK BIOMETRIK (TIDAK DIUBAH) ---
   Future<void> checkBiometrics() async {
     try {
       canCheckBiometrics = await auth.canCheckBiometrics;
@@ -53,6 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // --- LOGIKA LOGIN MANUAL (DENGAN TAMBAHAN SIMPAN KREDENSIAL) ---
   Future<void> _handleLogin() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -95,6 +100,10 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
 
+        // 🔥 TAMBAHAN: SIMPAN EMAIL DAN PASSWORD DENGAN AMAN DI SECURE STORAGE
+        await _secureStorage.write(key: 'saved_email', value: _emailController.text);
+        await _secureStorage.write(key: 'saved_password', value: _passwordController.text);
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -123,6 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // --- LOGIKA BIOMETRIK LOGIN (DIUBAH AGAR AUTO-LOGIN MENGGUNAKAN DATA TERSIMPAN) ---
   Future<void> _handleBiometricLogin() async {
     try {
       String reason = availableBiometrics.contains(BiometricType.face)
@@ -132,22 +142,64 @@ class _LoginScreenState extends State<LoginScreen> {
       bool authenticated = await auth.authenticate(localizedReason: reason);
 
       if (authenticated) {
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-        );
+        setState(() => _isLoading = true);
+
+        // 🔥 TAMBAHAN: AMBIL KREDENSIAL YANG TERSIMPAN
+        String? savedEmail = await _secureStorage.read(key: 'saved_email');
+        String? savedPassword = await _secureStorage.read(key: 'saved_password');
+
+        if (savedEmail != null && savedPassword != null) {
+          // Lakukan request login otomatis ke API menggunakan data tersimpan
+          final response = await http.post(
+            Uri.parse('${ApiConfig.baseUrl}/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              "email": savedEmail,
+              "password": savedPassword,
+            }),
+          ).timeout(const Duration(seconds: 10));
+
+          final responseData = jsonDecode(response.body);
+
+          if (response.statusCode == 200) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('token', responseData['token']);
+            if (responseData['user'] != null) {
+              await prefs.setString('user_name', responseData['user']['nama'] ?? "User");
+              await prefs.setString('user_email', responseData['user']['email'] ?? savedEmail);
+            }
+
+            if (!mounted) return;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+            );
+          } else {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Sesi bermasalah. Silakan login manual.")),
+            );
+          }
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Belum ada akun yang tersimpan. Login manual terlebih dahulu.")),
+          );
+        }
+        
+        if (mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
       print("Error Biometrik: $e");
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // --- UI BARU (CAFFIO APP STYLE) ---
+  // --- UI BARU (CAFFIO APP STYLE) - TIDAK ADA PERUBAHAN ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Tema terang elegan
+      backgroundColor: Colors.grey[50], 
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 25.0, vertical: 40.0),
@@ -353,7 +405,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 20),
                 GestureDetector(
-                  onTap: _handleBiometricLogin,
+                  onTap: _isLoading ? null : _handleBiometricLogin,
                   child: Container(
                     padding: const EdgeInsets.all(15),
                     decoration: BoxDecoration(

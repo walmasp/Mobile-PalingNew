@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // 🔥 Import Provider
 import 'features/auth/screens/welcome_screen.dart';
 import 'core/utils/point_provider.dart'; // 🔥 Sesuaikan path ke file PointProvider kamu
+import 'core/utils/notification_helper.dart'; // 🔥 Sesuaikan path ke file NotificationHelper kamu
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+
 
 void main() async {
   // Wajib ditambahkan karena menggunakan fungsi async sebelum runApp
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+  await NotificationHelper.init();
 
   runApp(
     // 🔥 Bungkus MainApp dengan MultiProvider agar state poin bisa diakses di semua screen

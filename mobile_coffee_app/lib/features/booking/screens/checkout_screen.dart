@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/services/booking_service.dart';
 import '../../../data/services/table_service.dart';
 import '../../../data/services/notification_service.dart';
+import '../../../core/utils/notification_helper.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final int cafeId;
@@ -131,26 +132,42 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
           return StatefulBuilder(
             builder: (context, setStateDialog) {
-              pollingTimer ??= Timer.periodic(const Duration(seconds: 3), (
-                timer,
-              ) async {
+              pollingTimer ??= Timer.periodic(const Duration(seconds: 3), (timer) async {
                 String status = await BookingService.checkStatus(
                   result['booking_id'],
                 );
-                if (status == 'confirmed' || status == 'selesai') {
+
+                // 1. Jadikan huruf kecil semua biar kebal dari salah ketik/kapital
+                String statusAman = status.toLowerCase();
+                print("STATUS POLLING: $statusAman"); // Buat cek di terminal
+
+                if (statusAman == 'confirmed' || statusAman == 'selesai') {
                   timer.cancel();
 
-                  await NotificationService.createNotification(
+                  // 2. 🔥 INI FUNGSI UNTUK MUNCULIN NOTIF POP-UP DI HP KAMU
+                  await NotificationHelper.showNotification(
                     "Pembayaran Berhasil! 🎉",
                     "Booking kamu telah dikonfirmasi. Sampai jumpa di lokasi!",
                   );
 
+                  // 3. Menyimpan riwayat ke database untuk Activity Screen
+                  try {
+                    await NotificationService.createNotification(
+                      "Pembayaran Berhasil! 🎉",
+                      "Booking kamu telah dikonfirmasi. Sampai jumpa di lokasi!",
+                    );
+                  } catch (e) {
+                    print("Gagal simpan ke DB: $e");
+                  }
+
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.remove('cart_cafe_${widget.cafeId}');
-                  setStateDialog(() => isPaid = true);
+                  
+                  if (mounted) {
+                    setStateDialog(() => isPaid = true);
+                  }
 
                   Future.delayed(const Duration(seconds: 2), () {
-                    // 🔥 PERBAIKAN NAVIGASI KE MAIN NAVIGATION SCREEN
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(

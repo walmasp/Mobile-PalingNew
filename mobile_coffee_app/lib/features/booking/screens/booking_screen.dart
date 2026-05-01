@@ -106,7 +106,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
                 // --- DROPDOWN PILIH MEJA ---
                 DropdownButtonFormField<String>(
-                  value: mejaTerpilih,
+                  initialValue: mejaTerpilih,
                   decoration: InputDecoration(
                     labelText: 'Pilih Meja',
                     prefixIcon: const Icon(

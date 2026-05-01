@@ -7,6 +7,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../features/mini_games/screens/games_menu_screen.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../features/ai/screens/ai_barista_screen.dart'; // Sesuaikan folder kamu
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -28,66 +29,86 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true, // Agar body (seperti Maps) tidak terpotong background putih navbar
       body: IndexedStack(index: _currentIndex, children: _pages),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
+      
+      // 🔥 1. TOMBOL AI CHATBOT (MENONJOL DI TENGAH)
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Membuka KopiBot AI 🤖☕
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AiBaristaScreen(),
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) => setState(() => _currentIndex = index),
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            selectedItemColor: Colors.brown[700],
-            unselectedItemColor: Colors.grey[400],
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.normal,
-              fontSize: 11,
-            ),
-            elevation: 0,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Padding(
-                  padding: EdgeInsets.only(bottom: 5),
-                  child: Icon(Icons.home_filled),
-                ),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Padding(
-                  padding: EdgeInsets.only(bottom: 5),
-                  child: Icon(Icons.map_rounded),
-                ),
-                label: 'Maps',
-              ),
-              BottomNavigationBarItem(
-                icon: Padding(
-                  padding: EdgeInsets.only(bottom: 5),
-                  child: Icon(Icons.sports_esports_rounded),
-                ),
-                label: 'Games',
-              ),
-              BottomNavigationBarItem(
-                icon: Padding(
-                  padding: EdgeInsets.only(bottom: 5),
-                  child: Icon(Icons.person),
-                ),
-                label: 'Profile',
-              ),
+          );
+        },
+        backgroundColor: Colors.brown[700],
+        foregroundColor: Colors.white,
+        shape: const CircleBorder(),
+        elevation: 6,
+        child: const Icon(Icons.smart_toy_rounded, size: 28),
+      ),
+      
+      // 🔥 2. POSISI TOMBOL DI TENGAH NAVBAR
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+
+      // 🔥 3. NAVBAR DENGAN LENGKUNGAN (NOTCH)
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        color: Colors.white,
+        elevation: 20,
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(
+          height: 65,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: <Widget>[
+              // SISI KIRI
+              _buildNavItem(icon: Icons.home_filled, label: 'Home', index: 0),
+              _buildNavItem(icon: Icons.map_rounded, label: 'Maps', index: 1),
+              
+              // SPASI KOSONG DI TENGAH (Untuk tempat tombol mengambang)
+              const SizedBox(width: 48),
+
+              // SISI KANAN
+              _buildNavItem(icon: Icons.sports_esports_rounded, label: 'Games', index: 2),
+              _buildNavItem(icon: Icons.person, label: 'Profile', index: 3),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // 🔥 WIDGET CUSTOM UNTUK ITEM NAVBAR
+  Widget _buildNavItem({required IconData icon, required String label, required int index}) {
+    bool isSelected = _currentIndex == index;
+    return InkWell(
+      onTap: () => setState(() => _currentIndex = index),
+      customBorder: const CircleBorder(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.brown[700] : Colors.grey[400],
+              size: 26,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.brown[700] : Colors.grey[400],
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 11,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -605,7 +626,7 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              "$rating",
+                              rating,
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 13,

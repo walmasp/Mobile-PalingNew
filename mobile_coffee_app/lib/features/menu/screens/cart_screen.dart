@@ -181,12 +181,20 @@ class _CartScreenState extends State<CartScreen> {
                               color: Colors.brown[50],
                               borderRadius: BorderRadius.circular(15),
                             ),
-                            child: const Icon(
-                              Icons.coffee,
-                              color: Colors.brown,
-                            ),
+                            child: item['foto_url'] != null && item['foto_url'].toString().isNotEmpty
+                                    ? Image.network(
+                                        item['foto_url'],
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return const Icon(Icons.broken_image, color: Colors.brown, size: 40);
+                                        },
+                                      )
+                                    : const Icon(
+                                        Icons.coffee,
+                                        color: Colors.brown,
+                                        size: 40,
+                                      ),
                           ),
-                          const SizedBox(width: 15),
 
                           // Info Produk
                           Expanded(

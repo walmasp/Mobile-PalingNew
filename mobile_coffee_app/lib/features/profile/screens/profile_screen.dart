@@ -5,6 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/config/api_config.dart'; // Sesuaikan path ini dengan letak file api_config.dart kamu
+import 'package:provider/provider.dart';
+import '../../../core/utils/point_provider.dart';
+
 
 // 🔥 IMPORT LOGIN SCREEN (Pastikan path ini sesuai dengan folder kamu)
 import '../../auth/screens/login_screen.dart';
@@ -44,11 +47,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _totalPoints = prefs.getInt('total_points_$_email') ?? 0; 
     });
 
+    Provider.of<PointProvider>(context, listen: false).updatePoin(_totalPoints);
     // Panggil fungsi API database SETELAH state email didapatkan
     if (_email != "guest@caffio.com") {
       _fetchRealPointsFromDB();
     }
   }
+
 
   // Fungsi baru untuk menarik poin asli dari database
   Future<void> _fetchRealPointsFromDB() async {
@@ -57,26 +62,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       var response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"email": _email}), // Cari poin berdasarkan email
+        body: jsonEncode({"email": _email}),
       );
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
         int realPoints = data['poin'] ?? 0;
-
-        // Perbarui tampilan poin di layar
-        setState(() {
-          _totalPoints = realPoints;
-        });
-
-        // Sinkronkan dengan SharedPreferences lokal agar tidak hilang saat offline
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('total_points_$_email', realPoints);
-      } else {
-        print("Gagal fetch poin: ${response.body}");
+        if (mounted) {
+          Provider.of<PointProvider>(context, listen: false).updatePoin(realPoints);
+        }
       }
     } catch (e) {
-      print("Error mengambil poin dari database: $e");
+      debugPrint("Gagal fetch poin: $e");
     }
   }
 
@@ -313,7 +310,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                        child: Text("$_totalPoints / 200", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        child: 
+                        Consumer<PointProvider>(
+                        builder: (context, pointProvider, child) {
+                          return Text(
+                            "${pointProvider.poin} Poin",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.brown,
+                            ),
+                          );
+                        },
+                      ),
                       ),
                     ],
                   ),
@@ -331,7 +340,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     _totalPoints >= 200
                         ? "🎉 Yeay! Kamu bisa klaim voucher sekarang."
-                        : "Kumpulkan ${(200 - _totalPoints).clamp(0, 200)} poin lagi untuk Diskon 50%",
+                        : "Kumpulkan ${(200 - _totalPoints).clamp(0, 200)} poin lagi untuk Diskon 0%",
                     style: const TextStyle(fontSize: 13, color: Colors.white70),
                   ),
                 ],

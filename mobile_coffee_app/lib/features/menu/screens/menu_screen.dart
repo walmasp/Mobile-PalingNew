@@ -141,6 +141,8 @@ class _MenuScreenState extends State<MenuScreen> {
           'harga': double.parse(menu['harga'].toString()).toInt(),
           'jumlah': 1,
           'catatan': '',
+          // 👇 INI TAMBAHANNYA AGAR GAMBAR MASUK KE KERANJANG
+          'foto_url': menu['foto_url'], 
         };
       }
     });
@@ -441,19 +443,29 @@ class _MenuScreenState extends State<MenuScreen> {
                                 child: Row(
                                   children: [
                                     // Gambar Placeholder Kopi
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(15),
-                                      child: Container(
-                                        width: 80,
-                                        height: 80,
-                                        color: Colors.brown[50],
-                                        child: const Icon(
-                                          Icons.coffee,
-                                          color: Colors.brown,
-                                          size: 40,
-                                        ),
-                                      ),
+                                    // Gambar Menu (Dari Database)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(15),
+                                    child: Container(
+                                      width: 80,
+                                      height: 80,
+                                      color: Colors.brown[50],
+                                      child: menu['foto_url'] != null && menu['foto_url'].toString().isNotEmpty
+                                          ? Image.network(
+                                              menu['foto_url'],
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+              // Kalau linknya rusak/error, muncul icon ini
+                                                return const Icon(Icons.broken_image, color: Colors.brown, size: 40);
+                                              },
+                                            )
+                                          : const Icon(
+                                              Icons.coffee,
+                                              color: Colors.brown,
+                                              size: 40,
+                                            ),
                                     ),
+                                  ),
                                     const SizedBox(width: 15),
                                     // Detail Menu
                                     Expanded(
