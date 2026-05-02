@@ -340,7 +340,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     _totalPoints >= 200
                         ? "🎉 Yeay! Kamu bisa klaim voucher sekarang."
-                        : "Kumpulkan ${(200 - _totalPoints).clamp(0, 200)} poin lagi untuk Diskon 0%",
+                        : "Kumpulkan ${(200 - _totalPoints).clamp(0, 200)} poin lagi untuk Diskon 50%",
                     style: const TextStyle(fontSize: 13, color: Colors.white70),
                   ),
                 ],

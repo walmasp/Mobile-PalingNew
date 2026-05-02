@@ -17,4 +17,7 @@ router.post('/add-points', authController.addGamePoints);
 
 router.post('/get-poin', authController.getUserPoints);
 
+// Endpoint untuk Forgot Password
+router.post('/forgot-password', authController.forgotPassword);
+
 module.exports = router;

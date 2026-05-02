@@ -34,6 +34,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       
       // 🔥 1. TOMBOL AI CHATBOT (MENONJOL DI TENGAH)
       floatingActionButton: FloatingActionButton(
+
+       heroTag: 'ai_chatbot_btn', // Tambahkan heroTag untuk menghindari error jika ada FAB lain
         onPressed: () {
           // Membuka KopiBot AI 🤖☕
           Navigator.push(
@@ -823,20 +825,6 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                             offset: const Offset(0, 5),
                           ),
                         ],
-                      ),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: "Cari kafe di peta...",
-                          hintStyle: TextStyle(color: Colors.grey[400]),
-                          border: InputBorder.none,
-                          prefixIcon: const Icon(
-                            Icons.search,
-                            color: Colors.brown,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 17,
-                          ),
-                        ),
                       ),
                     ),
                   ),

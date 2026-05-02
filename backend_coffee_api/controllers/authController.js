@@ -210,4 +210,45 @@ exports.getUserPoints = (req, res) => {
         // Kirimkan jumlah poin ke Flutter
         res.status(200).json({ poin: results[0].poin });
     });
+
+};
+
+// ==========================================
+// FITUR RESET PASSWORD (LANGSUNG UPDATE)
+// ==========================================
+exports.forgotPassword = async (req, res) => {
+    const { email, newPassword } = req.body;
+
+    // 1. Validasi input
+    if (!email || !newPassword) {
+        return res.status(400).json({ message: 'Email dan Password baru wajib diisi!' });
+    }
+
+    try {
+        // 2. Cek apakah email ada di database
+        const checkQuery = 'SELECT * FROM users WHERE email = ?';
+        db.query(checkQuery, [email], async (err, results) => {
+            if (err) return res.status(500).json({ error: err.message });
+            
+            if (results.length === 0) {
+                return res.status(404).json({ message: 'Email tidak terdaftar!' });
+            }
+
+            // 3. Enkripsi Password Baru
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+            // 4. Update Password di Database
+            const updateQuery = 'UPDATE users SET password = ? WHERE email = ?';
+            db.query(updateQuery, [hashedPassword, email], (updateErr, updateResults) => {
+                if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+                res.status(200).json({ 
+                    message: 'Password berhasil diperbarui! Silakan login kembali.' 
+                });
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Terjadi kesalahan pada server' });
+    }
 };
