@@ -2,10 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:proximity_sensor/proximity_sensor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// 🔥 TAMBAHAN IMPORT UNTUK API
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../../../core/config/api_config.dart'; // Sesuaikan path config API kamu
+import '../../../core/config/api_config.dart'; 
 
 class EspressoExtractorScreen extends StatefulWidget {
   const EspressoExtractorScreen({super.key});
@@ -38,7 +37,6 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
     super.dispose();
   }
 
-  // 🔥 FUNGSI BARU: SIMPAN KE DATABASE & AKTIVITAS
   Future<void> _savePointsToDatabase(int poinDidapat, String namaGame) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -82,7 +80,6 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
       await prefs.setInt('total_points', currentPoints + 2);
     }
 
-    // Ganti teks "Nama Game" sesuai dengan file gamenya (Espresso Extractor / Barista Balance)
     await _savePointsToDatabase(2, "Espresso Extractor"); 
   }
 
