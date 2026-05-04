@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CartManager {
-  // Singleton pattern: Memastikan hanya ada 1 keranjang di seluruh aplikasi
   static final CartManager _instance = CartManager._internal();
   factory CartManager() => _instance;
   CartManager._internal();
@@ -28,19 +27,14 @@ class CartManager {
 
   // 3. Fungsi Tambah ke Keranjang
   void addToCart(Map<String, dynamic> menu) {
-    // Cek apakah menu sudah ada di keranjang berdasarkan ID-nya
-    // Catatan: Backend kamu butuh field 'menu_id' dan 'jumlah'
     int index = cartItems.indexWhere((item) => item['menu_id'] == menu['id']);
 
     if (index != -1) {
-      // Kalau sudah ada, tambah jumlahnya (qty) saja
       cartItems[index]['jumlah'] += 1;
     } else {
-      // Kalau belum ada, masukkan sebagai barang baru
       cartItems.add({
         'menu_id': menu['id'],
         'nama_menu': menu['nama_menu'],
-        // Pastikan harga tersimpan sebagai angka
         'harga': double.parse(menu['harga'].toString()).toInt(),
         'jumlah': 1,
       });
