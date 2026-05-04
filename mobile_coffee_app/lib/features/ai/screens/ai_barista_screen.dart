@@ -3,7 +3,6 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
-// 🔥 IMPORT SERVICE & CONTROLLER KAMU
 import '../../../data/services/menu_service.dart';
 import '../../../controllers/auth_controller.dart'; 
 
