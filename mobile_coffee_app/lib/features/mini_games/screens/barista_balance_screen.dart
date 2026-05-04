@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:light/light.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// 🔥 TAMBAHAN IMPORT UNTUK API
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/config/api_config.dart';
@@ -44,14 +43,13 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
     super.dispose();
   }
 
-  // 🔥 FUNGSI BARU: SIMPAN KE DATABASE & AKTIVITAS
+  // SIMPAN KE DATABASE & AKTIVITAS
   Future<void> _savePointsToDatabase(int poinDidapat, String namaGame) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       String? savedEmail = prefs.getString('user_email');
       if (savedEmail == null) return;
 
-      // Tambahkan /auth di tengahnya
       var url = Uri.parse('${ApiConfig.baseUrl}/auth/add-points');
 
       var response = await http.post(
@@ -89,7 +87,6 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
       await prefs.setInt('total_points', currentPoints + 2);
     }
 
-    // Ganti teks "Nama Game" sesuai dengan file gamenya (Espresso Extractor / Barista Balance)
     await _savePointsToDatabase(2, "Coffee Balance"); 
   }
 
