@@ -33,7 +33,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // --- LOGIKA UTAMA (TIDAK DIUBAH SAMA SEKALI) ---[cite: 10]
   Future<void> _handleRegister() async {
     if (_namaController.text.isEmpty ||
         _emailController.text.isEmpty ||
@@ -95,7 +94,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // --- UI BARU (CAFFIO APP STYLE) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
