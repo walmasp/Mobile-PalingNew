@@ -10,7 +10,6 @@ class NotificationService {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
-      // Pastikan endpoint ini (/bookings/notifications) sudah ada di backend Node.js kamu
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/bookings/notifications'),
         headers: {
