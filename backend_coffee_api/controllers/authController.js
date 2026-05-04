@@ -10,7 +10,7 @@ const path = require('path');
 // ==========================================
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/') // Pastikan folder 'uploads' sudah kamu buat di root backend!
+        cb(null, 'uploads/') 
     },
     filename: function (req, file, cb) {
         // Nama file unik agar tidak bertabrakan
@@ -31,12 +31,11 @@ exports.register = async (req, res) => {
 
         // 2. Simpan ke Database
         const query = 'INSERT INTO users (nama, email, password, role) VALUES (?, ?, ?, ?)';
-        // Default role kita set 'pelanggan' jika tidak diisi
         const userRole = role || 'pelanggan'; 
 
         db.query(query, [nama, email, hashedPassword, userRole], (err, result) => {
             if (err) {
-                // Jika email sudah terdaftar (karena di DB kita set UNIQUE)
+                // Jika email sudah terdaftar
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(400).json({ message: 'Email sudah terdaftar!' });
                 }
@@ -89,7 +88,7 @@ exports.login = (req, res) => {
                 role: user.role,
                 foto_profil: user.foto_profil, 
                 kesan_pesan: user.kesan_pesan,
-                poin: user.poin // 🔥 PERBAIKAN: Poin ikut dikirim ke HP saat login
+                poin: user.poin 
             }
         });
     });
@@ -99,7 +98,6 @@ exports.login = (req, res) => {
 exports.getProfile = (req, res) => {
     const user_id = req.user.id;
 
-    // 🔥 PERBAIKAN: Tambahkan 'poin' ke dalam daftar yang diambil dari database
     const query = 'SELECT id, nama, email, role, foto_profil, kesan_pesan, poin FROM users WHERE id = ?';
 
     db.query(query, [user_id], (err, results) => {
@@ -116,9 +114,7 @@ exports.getProfile = (req, res) => {
     });
 };
 
-// ==========================================
-// 🔥 PERBAIKAN: FITUR UPDATE PROFIL (FOTO & KESAN PESAN)
-// ==========================================
+
 exports.updateProfile = (req, res) => {
     upload(req, res, function (err) {
         // Tangani error multer
