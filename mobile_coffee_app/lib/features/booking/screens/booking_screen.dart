@@ -13,7 +13,6 @@ class _BookingScreenState extends State<BookingScreen> {
   int? jumlahOrang;
   String? mejaTerpilih;
 
-  // Contoh list meja sementara (Nantinya data ini diambil dari table_service.dart)
   List<String> mejaAvailable = [
     'Meja 01 (Kapasitas 4)',
     'Meja 02 (Kapasitas 6)',
@@ -23,7 +22,7 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // 🟤 Tema Terang Elegan
+      backgroundColor: Colors.grey[50], 
       appBar: AppBar(
         title: const Text(
           'Booking Meja',
@@ -52,7 +51,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
                 const SizedBox(height: 25),
 
-                // --- INPUT JUMLAH ORANG ---
+                // INPUT JUMLAH ORANG
                 TextFormField(
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
@@ -95,16 +94,14 @@ class _BookingScreenState extends State<BookingScreen> {
                   onChanged: (value) {
                     setState(() {
                       jumlahOrang = int.tryParse(value);
-                      // Reset pilihan meja jika jumlah orang berubah
                       mejaTerpilih = null;
-                      // TODO: Panggil table_service.dart di sini untuk fetch ulang
                     });
                   },
                 ),
 
                 const SizedBox(height: 25),
 
-                // --- DROPDOWN PILIH MEJA ---
+                // DROPDOWN PILIH MEJA 
                 DropdownButtonFormField<String>(
                   initialValue: mejaTerpilih,
                   decoration: InputDecoration(
@@ -148,7 +145,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                           );
                         }).toList()
-                      : null, // Dropdown disable (abu-abu) kalau belum isi jumlah orang
+                      : null, 
                   onChanged: (String? newValue) {
                     setState(() {
                       mejaTerpilih = newValue;
@@ -159,15 +156,15 @@ class _BookingScreenState extends State<BookingScreen> {
                       : null,
                 ),
 
-                // 🔥 KOTAK NOTES UNTUK ROMBONGAN > 6 ORANG
+                // KOTAK NOTES UNTUK ROMBONGAN > 6 ORANG
                 Container(
                   margin: const EdgeInsets.only(
                     top: 25,
-                  ), // Jarak dari dropdown atasnya
+                  ),
                   padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
                     color: Colors
-                        .orange[50], // Latar belakang senada dengan tema Caffio
+                        .orange[50], 
                     borderRadius: BorderRadius.circular(15),
                     border: Border.all(color: Colors.orange[200]!),
                   ),
@@ -195,7 +192,7 @@ class _BookingScreenState extends State<BookingScreen> {
         ),
       ),
 
-      // --- TOMBOL LANJUT (Dipindah ke Bawah biar Konsisten) ---
+      // TOMBOL LANJUT 
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
         decoration: BoxDecoration(
@@ -222,7 +219,6 @@ class _BookingScreenState extends State<BookingScreen> {
                 elevation: 0,
               ),
               onPressed: () {
-                // Validasi form sebelum lanjut
                 if (_formKey.currentState!.validate()) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -232,7 +228,6 @@ class _BookingScreenState extends State<BookingScreen> {
                       backgroundColor: Colors.brown,
                     ),
                   );
-                  // Navigator.pushNamed(context, '/menu'); // Contoh routing
                 }
               },
               child: const Text(
