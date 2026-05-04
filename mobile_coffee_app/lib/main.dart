@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // 🔥 Import Provider
+import 'package:provider/provider.dart'; 
 import 'features/auth/screens/welcome_screen.dart';
-import 'core/utils/point_provider.dart'; // 🔥 Sesuaikan path ke file PointProvider kamu
-import 'core/utils/notification_helper.dart'; // 🔥 Sesuaikan path ke file NotificationHelper kamu
+import 'core/utils/point_provider.dart'; 
+import 'core/utils/notification_helper.dart'; 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
 
 void main() async {
-  // Wajib ditambahkan karena menggunakan fungsi async sebelum runApp
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await NotificationHelper.init();
 
   runApp(
-    // 🔥 Bungkus MainApp dengan MultiProvider agar state poin bisa diakses di semua screen
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => PointProvider()),
@@ -33,7 +31,6 @@ class MainApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Caffio App',
       theme: ThemeData(
-        // Tema utama Cokelat (Brown) khas Caffio
         primarySwatch: Colors.brown,
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.brown,
@@ -41,7 +38,6 @@ class MainApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      // Halaman pertama yang muncul adalah WelcomeScreen
       home: const WelcomeScreen(),
     );
   }
