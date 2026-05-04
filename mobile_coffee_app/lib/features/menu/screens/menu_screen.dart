@@ -24,7 +24,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Map<String, dynamic> cart = {};
 
-  // 🔥 VARIABEL MATA UANG UNIVERSAL (TIDAK DIUBAH)
+  // VARIABEL MATA UANG UNIVERSAL 
   String selectedCurrency = 'IDR';
   Map<String, double> exchangeRates = {
     'IDR': 1.0,
@@ -34,10 +34,6 @@ class _MenuScreenState extends State<MenuScreen> {
     'KRW': 0.085,
     'EUR': 0.000058,
   };
-
-  // 🔥 TAMBAHAN UI: Kategori Filter
-  int _selectedCategoryIndex = 0;
-  final List<String> _categories = ["All", "Kopi", "Teh", "Susu", "Snack"];
 
   @override
   void initState() {
@@ -53,7 +49,7 @@ class _MenuScreenState extends State<MenuScreen> {
     super.dispose();
   }
 
-  // --- LOGIKA DATA (TIDAK DIUBAH SAMA SEKALI) ---
+  // LOGIKA DATA 
   Future<void> fetchExchangeRates() async {
     try {
       final response = await http.get(
@@ -141,7 +137,6 @@ class _MenuScreenState extends State<MenuScreen> {
           'harga': double.parse(menu['harga'].toString()).toInt(),
           'jumlah': 1,
           'catatan': '',
-          // 👇 INI TAMBAHANNYA AGAR GAMBAR MASUK KE KERANJANG
           'foto_url': menu['foto_url'], 
         };
       }
@@ -166,11 +161,10 @@ class _MenuScreenState extends State<MenuScreen> {
     return total;
   }
 
-  // --- UI BARU (CAFFIO APP STYLE) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Background terang elegan
+      backgroundColor: Colors.grey[50], 
       body: SafeArea(
         child: isLoading
             ? const Center(
@@ -179,7 +173,7 @@ class _MenuScreenState extends State<MenuScreen> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- HEADER ---
+                  // HEADER 
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
                     child: Row(
@@ -272,7 +266,7 @@ class _MenuScreenState extends State<MenuScreen> {
                     ),
                   ),
 
-                  // --- SEARCH & CURRENCY ROW ---
+                  // SEARCH & CURRENCY ROW 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
@@ -313,7 +307,7 @@ class _MenuScreenState extends State<MenuScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        // Dropdown Currency dibalut dengan UI yang cantik
+                        // Dropdown Currency 
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           decoration: BoxDecoration(
@@ -350,7 +344,6 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // --- KATEGORI HORIZONTAL ---
                   SizedBox(
                     height: 40,
                     child: ListView.builder(
@@ -362,7 +355,6 @@ class _MenuScreenState extends State<MenuScreen> {
                         return GestureDetector(
                           onTap: () {
                             setState(() => _selectedCategoryIndex = index);
-                            // Otomatis filter berdasarkan nama kategori (kecuali "All")
                             filterMenus(
                               _categories[index] == "All"
                                   ? ""
@@ -400,7 +392,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // --- LIST MENU ---
+                  // LIST MENU 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: const Text(
@@ -442,8 +434,6 @@ class _MenuScreenState extends State<MenuScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    // Gambar Placeholder Kopi
-                                    // Gambar Menu (Dari Database)
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(15),
                                     child: Container(
@@ -455,7 +445,6 @@ class _MenuScreenState extends State<MenuScreen> {
                                               menu['foto_url'],
                                               fit: BoxFit.cover,
                                               errorBuilder: (context, error, stackTrace) {
-              // Kalau linknya rusak/error, muncul icon ini
                                                 return const Icon(Icons.broken_image, color: Colors.brown, size: 40);
                                               },
                                             )
@@ -501,7 +490,6 @@ class _MenuScreenState extends State<MenuScreen> {
                                                   fontSize: 16,
                                                 ),
                                               ),
-                                              // Tombol Plus (+) Bergaya Modern
                                               GestureDetector(
                                                 onTap: () => addToCart(menu),
                                                 child: Container(
