@@ -7,7 +7,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../features/mini_games/screens/games_menu_screen.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../features/ai/screens/ai_barista_screen.dart'; // Sesuaikan folder kamu
+import '../../features/ai/screens/ai_barista_screen.dart'; 
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -29,15 +29,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true, // Agar body (seperti Maps) tidak terpotong background putih navbar
+      extendBody: true, 
       body: IndexedStack(index: _currentIndex, children: _pages),
       
-      // 🔥 1. TOMBOL AI CHATBOT (MENONJOL DI TENGAH)
+      //  TOMBOL AI CHATBOT 
       floatingActionButton: FloatingActionButton(
 
-       heroTag: 'ai_chatbot_btn', // Tambahkan heroTag untuk menghindari error jika ada FAB lain
+       heroTag: 'ai_chatbot_btn', 
         onPressed: () {
-          // Membuka KopiBot AI 🤖☕
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -52,10 +51,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         child: const Icon(Icons.smart_toy_rounded, size: 28),
       ),
       
-      // 🔥 2. POSISI TOMBOL DI TENGAH NAVBAR
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      // 🔥 3. NAVBAR DENGAN LENGKUNGAN (NOTCH)
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
@@ -67,14 +64,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: <Widget>[
-              // SISI KIRI
               _buildNavItem(icon: Icons.home_filled, label: 'Home', index: 0),
               _buildNavItem(icon: Icons.map_rounded, label: 'Maps', index: 1),
               
-              // SPASI KOSONG DI TENGAH (Untuk tempat tombol mengambang)
               const SizedBox(width: 48),
 
-              // SISI KANAN
               _buildNavItem(icon: Icons.sports_esports_rounded, label: 'Games', index: 2),
               _buildNavItem(icon: Icons.person, label: 'Profile', index: 3),
             ],
@@ -84,7 +78,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  // 🔥 WIDGET CUSTOM UNTUK ITEM NAVBAR
   Widget _buildNavItem({required IconData icon, required String label, required int index}) {
     bool isSelected = _currentIndex == index;
     return InkWell(
@@ -117,7 +110,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ================= CAFE HOME (AGREGATOR) =================
+//CAFE HOME 
 
 class CafeHomeScreen extends StatefulWidget {
   const CafeHomeScreen({super.key});
@@ -156,10 +149,10 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
     }
   }
 
-  // 🔥 FUNGSI PENCARIAN YANG SUDAH DIPERBAIKI
+  //  FUNGSI PENCARIAN 
   void filterSearch(String query) {
     setState(() {
-      _isSeeAll = true; // Langsung tampilkan semua jika sedang mencari
+      _isSeeAll = true; 
       if (query.isEmpty) {
         filteredCafes = cafes;
       } else {
@@ -235,7 +228,7 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
             ),
             const SizedBox(height: 25),
 
-            // 🔥 SEARCH BAR AKTIF
+            // SEARCH BAR
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
               decoration: BoxDecoration(
@@ -262,7 +255,7 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
             ),
             const SizedBox(height: 30),
 
-            // 🔥 HEADER KATEGORI & SEE ALL
+            // HEADER KATEGORI & SEE ALL
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -284,7 +277,7 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
             ),
 
 
-            // 🔥 LIST CAFE SESUAI DATABASE
+            // LIST CAFE SESUAI DATABASE
             isLoading
                 ? const Center(
                     child: Padding(
@@ -316,7 +309,7 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
 
 
   Widget _buildCafeCard(BuildContext context, Map cafe) {
-    // 🔥 MENGAMBIL RATING DAN FOTO DARI DATABASE
+    // MENGAMBIL RATING DAN FOTO DARI DATABASE
     String rating = cafe['rating'] != null ? cafe['rating'].toString() : "4.5";
     String? fotoUrl = cafe['foto_url'];
 
@@ -354,7 +347,7 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
                 width: 90,
                 height: 90,
                 color: Colors.brown[50],
-                // 🔥 MENAMPILKAN FOTO JIKA ADA, IKA TIDAK TAMPILKAN ICON
+                // MENAMPILKAN FOTO JIKA ADA, IKA TIDAK TAMPILKAN ICON
                 child: fotoUrl != null && fotoUrl.isNotEmpty
                     ? Image.network(
                         fotoUrl,
@@ -400,7 +393,7 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
                             size: 16,
                           ),
                           const SizedBox(width: 4),
-                          // 🔥 MENAMPILKAN RATING DINAMIS
+                          // MENAMPILKAN RATING DINAMIS
                           Text(
                             rating,
                             style: TextStyle(
@@ -468,7 +461,7 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
   }
 }
 
-// ================= MAPS (LBS) =================
+// MAPS (LBS)
 
 class CafeMapsScreen extends StatefulWidget {
   const CafeMapsScreen({super.key});
