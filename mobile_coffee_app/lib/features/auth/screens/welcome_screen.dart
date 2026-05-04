@@ -102,7 +102,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             },
           ),
 
-          // Indikator Titik & Tombol (Posisi Tetap)
+          // Indikator Titik & Tombol 
           SafeArea(
             child: Align(
               alignment: Alignment.bottomCenter,
