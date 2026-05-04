@@ -28,7 +28,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool canCheckBiometrics = false;
   List<BiometricType> availableBiometrics = [];
   
-  // 🔥 TAMBAHAN INSTANCE SECURE STORAGE
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   @override
@@ -37,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     checkBiometrics(); 
   }
 
-  // --- LOGIKA CEK BIOMETRIK (TIDAK DIUBAH) ---
+  // --- LOGIKA CEK BIOMETRIK ---
   Future<void> checkBiometrics() async {
     try {
       canCheckBiometrics = await auth.canCheckBiometrics;
@@ -57,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // --- LOGIKA LOGIN MANUAL (DENGAN TAMBAHAN SIMPAN KREDENSIAL) ---
+  // --- LOGIKA LOGIN MANUAL ---
   Future<void> _handleLogin() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -100,7 +99,6 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
 
-        // 🔥 TAMBAHAN: SIMPAN EMAIL DAN PASSWORD DENGAN AMAN DI SECURE STORAGE
         await _secureStorage.write(key: 'saved_email', value: _emailController.text);
         await _secureStorage.write(key: 'saved_password', value: _passwordController.text);
 
@@ -144,7 +142,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (authenticated) {
         setState(() => _isLoading = true);
 
-        // 🔥 TAMBAHAN: AMBIL KREDENSIAL YANG TERSIMPAN
         String? savedEmail = await _secureStorage.read(key: 'saved_email');
         String? savedPassword = await _secureStorage.read(key: 'saved_password');
 
@@ -195,7 +192,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // --- UI BARU (CAFFIO APP STYLE) - TIDAK ADA PERUBAHAN ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
