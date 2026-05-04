@@ -4,12 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart'; 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../../core/config/api_config.dart'; // Sesuaikan path ini dengan letak file api_config.dart kamu
+import '../../../core/config/api_config.dart'; 
 import 'package:provider/provider.dart';
 import '../../../core/utils/point_provider.dart';
-
-
-// 🔥 IMPORT LOGIN SCREEN (Pastikan path ini sesuai dengan folder kamu)
 import '../../auth/screens/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -20,7 +17,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // --- Variabel Data User ---
+  //  Variabel Data User 
   String _nama = "Memuat...";
   String _email = "Memuat...";
   String _kesanPesan = "Memuat...";
@@ -36,7 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
   }
 
-  // --- LOGIKA UTAMA (DIUBAH AGAR SPESIFIK PER AKUN) ---
+  // LOGIKA UTAMA -
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -79,9 +76,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _usePoints() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('total_points_$_email', 0); // Reset poin khusus akun ini
+    await prefs.setInt('total_points_$_email', 0); 
     
-    // Opsional: Hapus kunci global lama jika ada biar bersih
     await prefs.remove('total_points'); 
 
     setState(() {
@@ -105,7 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (pickedFile != null) {
         final prefs = await SharedPreferences.getInstance();
-        // 🔥 PERBAIKAN: Simpan foto berdasarkan email
+        //  Simpan foto berdasarkan email
         await prefs.setString('user_image_$_email', pickedFile.path); 
         setState(() {
           _imagePath = pickedFile.path; 
@@ -118,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _saveKesanPesan(String newBio) async {
     final prefs = await SharedPreferences.getInstance();
-    // 🔥 PERBAIKAN: Simpan bio berdasarkan email
+    //  Simpan bio berdasarkan email
     await prefs.setString('user_bio_$_email', newBio); 
     setState(() {
       _kesanPesan = newBio; 
@@ -194,7 +190,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () async {
               final prefs = await SharedPreferences.getInstance();
               
-              // Hapus token sesi login (Tapi JANGAN hapus bio/foto pakai clear() agar terekam)
               await prefs.remove('token'); 
               await prefs.remove('user_name');
               await prefs.remove('user_email');
@@ -214,7 +209,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- UI BARU (CAFFIO APP STYLE) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -230,7 +224,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10), 
         child: Column(
           children: [
-            // --- BAGIAN HEADER PROFIL ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -280,7 +273,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 25),
 
-            // --- KARTU POIN REWARD ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(25),
@@ -348,7 +340,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 15),
 
-            // --- TOMBOL KLAIM HADIAH ---
             if (_totalPoints >= 200)
               Container(
                 margin: const EdgeInsets.only(bottom: 20),
@@ -377,7 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
 
-            // --- KARTU KESAN & PESAN (Bio) ---
+            // KARTU KESAN & PESAN (Bio) 
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -392,7 +383,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // 🔥 SUDAH DIUBAH MENJADI KESAN & PESAN
                       const Text("Kesan & Pesan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
                       GestureDetector(
                         onTap: _showEditBioDialog,
@@ -415,7 +405,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 35),
 
-            // --- TOMBOL LOGOUT ---
+            // TOMBOL LOGOUT 
             SizedBox(
               width: double.infinity,
               height: 55,
