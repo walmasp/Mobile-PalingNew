@@ -3,6 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthController {
   Future<String?> getLoggedInUserName() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('nama'); // Sesuaikan key-nya dengan saat kamu login
+    return prefs.getString('nama'); 
   }
 }
