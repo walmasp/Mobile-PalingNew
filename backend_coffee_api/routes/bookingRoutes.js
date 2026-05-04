@@ -15,7 +15,6 @@ router.get('/my-bookings', authMiddleware.verifyToken, bookingController.getMyBo
 // Mengecek status booking dari HP (Polling)
 router.get('/status/:id', authMiddleware.verifyToken, bookingController.getBookingStatus);
 
-// 🔥 RUTE NOTIFIKASI (TARUH DI SINI)
 // 1. Mengambil daftar notifikasi milik saya
 router.get('/notifications/me', authMiddleware.verifyToken, bookingController.getMyNotifications);
 
@@ -23,9 +22,6 @@ router.get('/notifications/me', authMiddleware.verifyToken, bookingController.ge
 router.post('/notifications', authMiddleware.verifyToken, bookingController.createNotification);
 
 
-// ==========================================
-// URL UNTUK ADMIN / KASIR
-// ==========================================
 // 1. Lihat semua booking (Wajib Admin)
 router.get('/admin/all', authMiddleware.verifyToken, authMiddleware.isAdmin, bookingController.getAllBookings);
 
@@ -35,6 +31,4 @@ router.put('/admin/status/:id', authMiddleware.verifyToken, authMiddleware.isAdm
 // 3. Scan QR Code dari pelanggan (Wajib Admin)
 router.post('/admin/scan', authMiddleware.verifyToken, authMiddleware.isAdmin, bookingController.scanQRCode);
 
-
-// 🔥 PASTIKAN module.exports BERADA DI PALING BAWAH
 module.exports = router;
