@@ -43,7 +43,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     fetchTables();
   }
 
-  // --- LOGIKA DATA (TIDAK DIUBAH) ---
+  // LOGIKA DATA 
   String formatPrice(dynamic originalPrice) {
     double price = double.parse(originalPrice.toString());
     if (widget.currency == 'IDR') {
@@ -122,7 +122,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       if (!mounted) return;
 
-      // DIALOG PEMBAYARAN DIPERBARUI JADI LEBIH MODERN
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -137,20 +136,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   result['booking_id'],
                 );
 
-                // 1. Jadikan huruf kecil semua biar kebal dari salah ketik/kapital
                 String statusAman = status.toLowerCase();
-                print("STATUS POLLING: $statusAman"); // Buat cek di terminal
+                print("STATUS POLLING: $statusAman"); 
 
                 if (statusAman == 'confirmed' || statusAman == 'selesai') {
                   timer.cancel();
 
-                  // 2. 🔥 INI FUNGSI UNTUK MUNCULIN NOTIF POP-UP DI HP KAMU
                   await NotificationHelper.showNotification(
                     "Pembayaran Berhasil! 🎉",
                     "Booking kamu telah dikonfirmasi. Sampai jumpa di lokasi!",
                   );
 
-                  // 3. Menyimpan riwayat ke database untuk Activity Screen
                   try {
                     await NotificationService.createNotification(
                       "Pembayaran Berhasil! 🎉",
@@ -290,7 +286,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  // --- UI BARU (CAFFIO APP STYLE) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -312,7 +307,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- JUMLAH ORANG ---
                   const Text(
                     "Jumlah Orang",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -366,7 +360,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                   const SizedBox(height: 25),
 
-                  // --- PILIH MEJA (Revisi Desain Ikon) ---
+                  // PILIH MEJA 
                   const Text(
                     "Pilih Nomor Meja Utama",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -382,14 +376,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                           childAspectRatio:
-                              0.9, // Diubah agar muat ikon dan teks
+                              0.9, 
                         ),
                     itemBuilder: (context, index) {
                       final table = tables[index];
                       final isSelected = selectedTableId == table['id'];
                       final kapasitas =
                           table['kapasitas'] ??
-                          4; // Default 4 jika API tidak punya field ini
+                          4; 
 
                       return GestureDetector(
                         onTap: () =>
@@ -476,7 +470,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                   const SizedBox(height: 25),
 
-                  // --- TANGGAL & JAM ---
                   const Text(
                     "Jadwal Kedatangan",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -484,7 +477,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      // Tombol Pilih Tanggal
                       Expanded(
                         child: GestureDetector(
                           onTap: () async {
@@ -542,7 +534,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ),
                       const SizedBox(width: 15),
-                      // Tombol Pilih Jam
                       Expanded(
                         child: GestureDetector(
                           onTap: () async {
@@ -679,7 +670,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
 
-      // --- BOTTOM NAVIGATION BAR UNTUK TOMBOL KONFIRMASI ---
+      // BOTTOM NAVIGATION BAR UNTUK TOMBOL KONFIRMASI
       bottomNavigationBar: isLoadingTables
           ? null
           : Container(
