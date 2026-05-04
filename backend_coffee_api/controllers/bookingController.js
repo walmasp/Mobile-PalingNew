@@ -131,7 +131,7 @@ exports.getMyBookings = (req, res) => {
     });
 };
 
-// --- FITUR KHUSUS ADMIN & KASIR ---
+
 exports.getAllBookings = (req, res) => {
     const query = `
         SELECT b.*, u.nama AS nama_pelanggan, t.nomor_meja, c.nama_cafe 
@@ -222,7 +222,6 @@ exports.getMyNotifications = (req, res) => {
     });
 };
 
-// 🔥 TAMBAHAN: FUNGSI UNTUK MEMBUAT NOTIFIKASI BARU (Dipanggil oleh Flutter)
 exports.createNotification = (req, res) => {
     const { judul, pesan } = req.body;
     const user_id = req.user.id;
