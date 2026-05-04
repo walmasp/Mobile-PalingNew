@@ -28,12 +28,10 @@ app.use('/api/bookings', bookingRoutes);
 const cafeRoutes = require('./routes/cafeRoutes');
 app.use('/api/cafes', cafeRoutes);
 
-// Bikin satu rute tes aja dulu
 app.get('/', (req, res) => {
     res.send('Halo! Server API Coffee Shop sudah jalan!');
 });
 
-// Nyalakan server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server nyala di http://localhost:${PORT}`);
