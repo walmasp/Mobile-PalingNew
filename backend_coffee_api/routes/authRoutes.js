@@ -9,7 +9,6 @@ router.get('/profile', authMiddleware.verifyToken, authController.getProfile);
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 
-// 🔥 Cukup panggil controllernya saja, karena Multer sudah di-handle di dalam authController
 router.post('/update-profile', authController.updateProfile);
 
 // Endpoint untuk menyimpan poin dari Mini Games
