@@ -8,7 +8,7 @@ class GamesMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Tema terang elegan Caffio
+      backgroundColor: Colors.grey[50], 
       appBar: AppBar(
         title: const Text(
           "Caffio Games",
@@ -68,7 +68,7 @@ class GamesMenuScreen extends StatelessWidget {
           ),
           const SizedBox(height: 15),
 
-          // --- KARTU GAME 1: BARISTA BALANCE ---
+          // BARISTA BALANCE 
           _buildGameCard(
             context: context,
             title: "Barista Balance",
@@ -87,7 +87,7 @@ class GamesMenuScreen extends StatelessWidget {
           ),
           const SizedBox(height: 15),
 
-          // --- KARTU GAME 2: ESPRESSO EXTRACTOR ---
+          //  ESPRESSO EXTRACTOR 
           _buildGameCard(
             context: context,
             title: "Espresso Extractor",
@@ -109,7 +109,6 @@ class GamesMenuScreen extends StatelessWidget {
     );
   }
 
-  // --- UI Card Game Modern ---
   Widget _buildGameCard({
     required BuildContext context,
     required String title,
