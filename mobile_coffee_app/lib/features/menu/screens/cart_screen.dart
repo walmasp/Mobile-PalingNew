@@ -30,7 +30,7 @@ class _CartScreenState extends State<CartScreen> {
     loadCart();
   }
 
-  // --- LOGIKA DATA (TIDAK DIUBAH) ---
+  // LOGIKA DATA 
   String formatPrice(dynamic originalPrice) {
     double price = double.parse(originalPrice.toString());
     if (widget.currency == 'IDR') {
@@ -111,7 +111,6 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  // --- UI BARU (CAFFIO APP STYLE) ---
   @override
   Widget build(BuildContext context) {
     List<String> cartKeys = cart.keys.toList();
@@ -173,7 +172,6 @@ class _CartScreenState extends State<CartScreen> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Placeholder Gambar Kecil
                           Container(
                             width: 60,
                             height: 60,
@@ -307,7 +305,7 @@ class _CartScreenState extends State<CartScreen> {
               },
             ),
 
-      // --- BOTTOM BAR ---
+      // BOTTOM BAR 
       bottomNavigationBar: cart.isEmpty
           ? null
           : Container(
