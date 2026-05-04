@@ -9,7 +9,6 @@ exports.getAllTables = (req, res) => {
     let params = [];
 
     if (cafe_id) {
-        // PERBAIKAN: Hanya gunakan AND di sini
         query += ' AND cafe_id = ?'; 
         params.push(cafe_id);
     }
@@ -25,7 +24,6 @@ exports.getAllTables = (req, res) => {
 
 // --- TAMBAH MEJA BARU ---
 exports.addTable = (req, res) => {
-    // Tambahkan cafe_id
     const { nomor_meja, kapasitas, area, cafe_id } = req.body;
     
     const query = 'INSERT INTO tables (nomor_meja, kapasitas, area, cafe_id) VALUES (?, ?, ?, ?)';
