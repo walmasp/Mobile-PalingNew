@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-// --- HALAMAN 1: DAFTAR CAFE (AGREGATOR) ---
+// DAFTAR CAFE 
 class CafeHomeScreen extends StatelessWidget {
   const CafeHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Background terang elegan
+      backgroundColor: Colors.grey[50], 
       appBar: AppBar(
         title: const Text("Explore Cafes", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.grey[50],
@@ -27,7 +27,7 @@ class CafeHomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- HEADER GREETING ---
+            // HEADER GREETING
             const Text("Good Morning,", style: TextStyle(fontSize: 14, color: Colors.grey)),
             const SizedBox(height: 5),
             const Text(
@@ -36,7 +36,7 @@ class CafeHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 25),
 
-            // --- SEARCH BAR ---
+            // SEARCH BAR
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
               decoration: BoxDecoration(
@@ -56,7 +56,7 @@ class CafeHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            // --- BAGIAN KATEGORI (Horizontal) ---
+            // BAGIAN KATEGORI
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -78,7 +78,7 @@ class CafeHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 25),
 
-            // --- DAFTAR CAFE (Vertical List) ---
+            // DAFTAR CAFE 
             const Text("Recommended For You", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
             
@@ -86,7 +86,7 @@ class CafeHomeScreen extends StatelessWidget {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: 3, // Tampilkan 3 contoh cafe
+              itemCount: 3, 
               itemBuilder: (context, index) {
                 return _buildCafeCard();
               },
@@ -188,20 +188,20 @@ class CafeHomeScreen extends StatelessWidget {
   }
 }
 
-// --- HALAMAN 2: MAPS (LBS) ---
+//  MAPS (LBS)
 class CafeMapsScreen extends StatelessWidget {
   const CafeMapsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200], // Warna dasar pura-pura jadi peta
+      backgroundColor: Colors.grey[200], 
       body: Stack(
         children: [
-          // 1. PLACEHOLDER MAPS (Nanti diganti widget GoogleMap)
+          // PLACEHOLDER MAPS
           Positioned.fill(
             child: Container(
-              color: Colors.brown[50], // Tema peta bernuansa warm
+              color: Colors.brown[50], 
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -215,7 +215,7 @@ class CafeMapsScreen extends StatelessWidget {
             ),
           ),
 
-          // 2. TOMBOL BACK & SEARCH BAR MELAYANG DI ATAS PETA
+          // TOMBOL BACK 
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
@@ -247,7 +247,7 @@ class CafeMapsScreen extends StatelessWidget {
             ),
           ),
 
-          // 3. CARD CAFE TERDEKAT MELAYANG DI BAWAH PETA
+          // CARD CAFE TERDEKAT 
           Positioned(
             bottom: 30,
             left: 0,
@@ -267,7 +267,6 @@ class CafeMapsScreen extends StatelessWidget {
                   ),
                 ),
                 
-                // Horizontal List Card Cafe
                 SizedBox(
                   height: 140,
                   child: ListView.builder(
@@ -282,13 +281,11 @@ class CafeMapsScreen extends StatelessWidget {
                         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))]),
                         child: Row(
                           children: [
-                            // Gambar Cafe Pura-pura
                             ClipRRect(
                               borderRadius: BorderRadius.circular(15),
                               child: Container(width: 80, height: double.infinity, color: Colors.brown[100], child: const Icon(Icons.coffee, color: Colors.brown)),
                             ),
                             const SizedBox(width: 15),
-                            // Info
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
