@@ -17,9 +17,8 @@ async function seedJogjaCafes() {
         const response = await axios.post('https://overpass-api.de/api/interpreter', overpassQuery, {
             headers: { 
                 'Content-Type': 'text/plain',
-                // 🔥 TAMBAHAN BARU DI SINI:
                 'Accept': 'application/json',
-                'User-Agent': 'CoffeeShopApp/1.0 (belajar_flutter)' // Identitas palsu agar OSM tidak memblokir
+                'User-Agent': 'CoffeeShopApp/1.0 (belajar_flutter)' 
             }
         });
 
