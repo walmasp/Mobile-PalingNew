@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// 🔥 Import disesuaikan dengan struktur folder barumu (mundur 3 folder)
 import '../../../core/config/api_config.dart';
 import '../../../core/utils/auth_helper.dart';
 
@@ -23,7 +22,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
     fetchActivities();
   }
 
-  // --- LOGIKA API TETAP SAMA (TIDAK DIUBAH) ---
   Future<void> fetchActivities() async {
     try {
       final headers = await getAuthHeaders();
@@ -45,11 +43,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
     }
   }
 
-  // --- UI BARU (CAFFIO APP STYLE) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Background terang elegan
+      backgroundColor: Colors.grey[50], 
       appBar: AppBar(
         title: const Text(
           "My Activity",
@@ -103,7 +100,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Ikon Activity Baru
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
