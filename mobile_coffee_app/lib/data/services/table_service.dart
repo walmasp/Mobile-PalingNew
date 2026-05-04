@@ -5,7 +5,6 @@ import '../../core/config/api_config.dart';
 class TableService {
   static Future<List<dynamic>> getTables(int cafeId) async {
     try {
-      // Menggunakan ApiConfig dari struktur folder kalian
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/tables?cafe_id=$cafeId'),
       );
