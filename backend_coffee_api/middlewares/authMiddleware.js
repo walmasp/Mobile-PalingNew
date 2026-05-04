@@ -20,7 +20,7 @@ exports.verifyToken = (req, res, next) => {
         // Menyimpan data user (id dan role) dari dalam tiket JWT ke dalam req
         // agar bisa dicek oleh satpam lapis 2
         req.user = decoded; 
-        next(); // Lolos! Silakan ke proses selanjutnya.
+        next(); 
     });
 };
 
@@ -29,5 +29,5 @@ exports.isAdmin = (req, res, next) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Akses ditolak! Fitur ini khusus Admin / Kasir.' });
     }
-    next(); // Lolos! Silakan tambah menu.
+    next(); 
 };
