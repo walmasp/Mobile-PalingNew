@@ -23,9 +23,8 @@ exports.getAllMenus = (req, res) => {
     });
 };
 
-// --- TAMBAH MENU BARU (Untuk Admin) ---
+// --- TAMBAH MENU BARU ---
 exports.addMenu = (req, res) => {
-    // Tambahkan cafe_id agar menu masuk ke cafe yang tepat
     const { cafe_id, nama_menu, deskripsi, harga, kategori, stok_tersedia, foto_url } = req.body;
 
     const query = 'INSERT INTO menus (cafe_id, nama_menu, deskripsi, harga, kategori, stok_tersedia, foto_url) VALUES (?, ?, ?, ?, ?, ?, ?)';
