@@ -28,6 +28,9 @@ app.use('/api/bookings', bookingRoutes);
 const cafeRoutes = require('./routes/cafeRoutes');
 app.use('/api/cafes', cafeRoutes);
 
+const recommendationRoutes = require('./routes/recommendationRoutes');
+app.use('/api/recommendations', recommendationRoutes);
+
 // Bikin satu rute tes aja dulu
 app.get('/', (req, res) => {
     res.send('Halo! Server API Coffee Shop sudah jalan!');

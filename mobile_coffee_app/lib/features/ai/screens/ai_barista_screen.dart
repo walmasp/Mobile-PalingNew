@@ -106,6 +106,7 @@ class _AiBaristaScreenState extends State<AiBaristaScreen> {
         _messages.add(ChatMessage(text: response.text ?? "Maaf, aku bingung..", isUser: false));
       });
     } catch (e) {
+      print("🚨 ERROR KOPIBOT ASLI: $e");
       setState(() {
         _messages.add(ChatMessage(text: "Waduh, mesin kopinya macet (Error)! Coba lagi ya. ☕", isUser: false));
       });

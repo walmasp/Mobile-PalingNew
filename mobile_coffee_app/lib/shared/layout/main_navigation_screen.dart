@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../core/config/api_config.dart';
 import 'package:flutter/material.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../data/services/cafe_service.dart';
@@ -34,8 +37,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       
       // 🔥 1. TOMBOL AI CHATBOT (MENONJOL DI TENGAH)
       floatingActionButton: FloatingActionButton(
-
-       heroTag: 'ai_chatbot_btn', // Tambahkan heroTag untuk menghindari error jika ada FAB lain
+        heroTag: 'ai_chatbot_btn', // Tambahkan heroTag untuk menghindari error jika ada FAB lain
         onPressed: () {
           // Membuka KopiBot AI 🤖☕
           Navigator.push(
@@ -180,6 +182,9 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
         ? filteredCafes
         : filteredCafes.take(3).toList();
 
+    // ID User default untuk demo cerdas, gantilah dengan ID dinamis dari sesi login jika ada
+    const String currentUserId = "9"; 
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -260,7 +265,11 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 25),
+
+            // 🔥 INTEGRASI FITUR AI/ML: SMART RECOMMENDATION SYSTEM MENU
+            const RecommendationSection(userId: currentUserId),
+            const SizedBox(height: 25),
 
             // 🔥 HEADER KATEGORI & SEE ALL
             Row(
@@ -282,7 +291,6 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
                 ),
               ],
             ),
-
 
             // 🔥 LIST CAFE SESUAI DATABASE
             isLoading
@@ -314,9 +322,7 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
     );
   }
 
-
   Widget _buildCafeCard(BuildContext context, Map cafe) {
-    // 🔥 MENGAMBIL RATING DAN FOTO DARI DATABASE
     String rating = cafe['rating'] != null ? cafe['rating'].toString() : "4.5";
     String? fotoUrl = cafe['foto_url'];
 
@@ -354,7 +360,6 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
                 width: 90,
                 height: 90,
                 color: Colors.brown[50],
-                // 🔥 MENAMPILKAN FOTO JIKA ADA, IKA TIDAK TAMPILKAN ICON
                 child: fotoUrl != null && fotoUrl.isNotEmpty
                     ? Image.network(
                         fotoUrl,
@@ -400,7 +405,6 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
                             size: 16,
                           ),
                           const SizedBox(width: 4),
-                          // 🔥 MENAMPILKAN RATING DINAMIS
                           Text(
                             rating,
                             style: TextStyle(
@@ -821,6 +825,188 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                 ),
               ],
             ),
+    );
+  }
+}
+
+// ================= WIDGET REKOMENDASI SMART MENU AI/ML =================
+
+class RecommendationSection extends StatefulWidget {
+  final String userId;
+
+  const RecommendationSection({super.key, required this.userId});
+
+  @override
+  State<RecommendationSection> createState() => _RecommendationSectionState();
+}
+
+class _RecommendationSectionState extends State<RecommendationSection> {
+  String sectionTitle = "Memuat rekomendasi...";
+  List recommendedMenus = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecommendations();
+  }
+
+  Future<void> _loadRecommendations() async {
+    try {
+      String baseUrl = "http://10.0.2.2:3000/api";
+      try {
+        baseUrl = ApiConfig.baseUrl; // Menggunakan konfigurasi dinamis milikmu jika tersedia
+      } catch (e) {
+        // Fallback jika ApiConfig bermasalah
+      }
+
+      final url = Uri.parse('$baseUrl/recommendations/${widget.userId}');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success']) {
+          setState(() {
+            sectionTitle = data['title'];
+            recommendedMenus = data['data'];
+            isLoading = false;
+          });
+        }
+      } else {
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      print("Error Recommendation UI: $e");
+      setState(() {
+        sectionTitle = "Gagal memuat rekomendasi";
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(10.0),
+          child: CircularProgressIndicator(color: Colors.brown),
+        ),
+      );
+    }
+
+    if (recommendedMenus.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          sectionTitle,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 175, // Ditinggikan sedikit agar muat teks nama kafe
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: recommendedMenus.length,
+            itemBuilder: (context, index) {
+              final menu = recommendedMenus[index];
+              return GestureDetector(
+                onTap: () {
+                  // 🔥 AKSI KLIK: Berpindah ke MenuScreen asal kafe dengan melempar cafeId dan cafeName
+                  if (menu['cafe_id'] != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MenuScreen(
+                          cafeId: menu['cafe_id'],
+                          cafeName: menu['nama_cafe'] ?? 'Cafe Rekomendasi',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Card(
+                  elevation: 0,
+                  color: Colors.white,
+                  margin: const EdgeInsets.only(right: 15, bottom: 5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(color: Colors.grey.withOpacity(0.15)),
+                  ),
+                  child: Container(
+                    width: 135,
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Container(
+                            width: double.infinity,
+                            height: 80,
+                            color: Colors.brown[50],
+                            child: menu['foto_url'] != null && menu['foto_url'].toString().isNotEmpty
+                                ? Image.network(
+                                    menu['foto_url'],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (ctx, err, stack) => const Icon(
+                                      Icons.coffee_rounded,
+                                      color: Colors.brown,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.coffee_rounded,
+                                    color: Colors.brown,
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          menu['nama_menu'] ?? 'Menu',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        // 🔥 SUBTITLE NAMA KAFE (Kecil & Abu-abu)
+                        Text(
+                          menu['nama_cafe'] ?? '',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const Spacer(),
+                        Text(
+                          "Rp ${menu['harga'].toString().replaceAll('.00', '')}",
+                          style: TextStyle(
+                            color: Colors.brown[700],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
