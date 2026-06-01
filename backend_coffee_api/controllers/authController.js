@@ -1,42 +1,68 @@
 const db = require('../config/database');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-// 🔥 TAMBAHAN: Import multer dan path untuk upload file
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 // ==========================================
 // KONFIGURASI MULTER (Untuk Foto Profil)
 // ==========================================
+
+// Pastikan folder uploads ada, buat jika belum ada
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/') // Pastikan folder 'uploads' sudah kamu buat di root backend!
+        cb(null, uploadsDir);
     },
     filename: function (req, file, cb) {
-        // Nama file unik agar tidak bertabrakan
-        cb(null, 'profile-' + Date.now() + path.extname(file.originalname))
+        // Nama file unik berdasarkan timestamp agar tidak bentrok
+        cb(null, 'profile-' + Date.now() + path.extname(file.originalname));
     }
 });
 
-const upload = multer({ storage: storage }).single('foto_profil');
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // Maksimal 5MB
+    fileFilter: function (req, file, cb) {
+        // Flutter/Android kadang mengirim MIME type yang tidak standar:
+        // - 'image/jpg' (bukan 'image/jpeg')
+        // - 'application/octet-stream' (binary stream)
+        // - 'image/jpeg;charset=UTF-8' (dengan charset)
+        // Solusi: cek MIME type dengan startsWith('image/') ATAU cek ekstensi file.
+        // Jika salah satu lolos, izinkan. Ini menangani semua variasi dari Android/iOS.
+        const allowedExtensions = /\.(jpeg|jpg|png|gif|webp)$/i;
+        const extOk = allowedExtensions.test(path.extname(file.originalname));
+        const mimeOk = file.mimetype.startsWith('image/') ||
+                       file.mimetype === 'application/octet-stream';
+
+        console.log(`[Upload] filename: ${file.originalname}, mimetype: ${file.mimetype}, extOk: ${extOk}, mimeOk: ${mimeOk}`);
+
+        if (extOk || mimeOk) {
+            cb(null, true);
+        } else {
+            cb(new Error(`Tipe file tidak didukung: ${file.mimetype}. Gunakan gambar (jpg, png, gif, webp).`));
+        }
+    }
+}).single('foto_profil');
 
 // --- FITUR REGISTER ---
 exports.register = async (req, res) => {
     const { nama, email, password, role } = req.body;
 
     try {
-        // 1. Enkripsi Password (Hashing)
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // 2. Simpan ke Database
         const query = 'INSERT INTO users (nama, email, password, role) VALUES (?, ?, ?, ?)';
-        // Default role kita set 'pelanggan' jika tidak diisi
-        const userRole = role || 'pelanggan'; 
+        const userRole = role || 'pelanggan';
 
         db.query(query, [nama, email, hashedPassword, userRole], (err, result) => {
             if (err) {
-                // Jika email sudah terdaftar (karena di DB kita set UNIQUE)
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(400).json({ message: 'Email sudah terdaftar!' });
                 }
@@ -53,32 +79,27 @@ exports.register = async (req, res) => {
 exports.login = (req, res) => {
     const { email, password } = req.body;
 
-    // 1. Cari user berdasarkan email
     const query = 'SELECT * FROM users WHERE email = ?';
     db.query(query, [email], async (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
-        
-        // Jika user tidak ditemukan
+
         if (results.length === 0) {
             return res.status(404).json({ message: 'Email tidak ditemukan!' });
         }
 
         const user = results[0];
 
-        // 2. Cek kecocokan password asli dengan password enkripsi di DB
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ message: 'Password salah!' });
         }
 
-        // 3. Buat Session (JWT Token)
         const token = jwt.sign(
-            { id: user.id, role: user.role }, 
-            process.env.JWT_SECRET, 
+            { id: user.id, role: user.role },
+            process.env.JWT_SECRET,
             { expiresIn: '1d' }
         );
 
-        // 4. Kirim balasan ke HP (Flutter)
         res.status(200).json({
             message: 'Login berhasil!',
             token: token,
@@ -87,9 +108,9 @@ exports.login = (req, res) => {
                 nama: user.nama,
                 email: user.email,
                 role: user.role,
-                foto_profil: user.foto_profil, 
+                foto_profil: user.foto_profil,
                 kesan_pesan: user.kesan_pesan,
-                poin: user.poin // 🔥 Poin ikut dikirim ke HP saat login
+                poin: user.poin
             }
         });
     });
@@ -116,37 +137,52 @@ exports.getProfile = (req, res) => {
 };
 
 // ==========================================
-// 🔥 FITUR UPDATE PROFIL (FOTO & KESAN PESAN)
+// FITUR UPDATE PROFIL (FOTO & KESAN PESAN)
 // ==========================================
+// PENTING: Endpoint ini sekarang menggunakan JWT token (authMiddleware)
+// untuk mendapatkan user_id, sehingga tidak perlu mengirim email di body.
+// Ini lebih aman karena user tidak bisa mengubah profil user lain.
 exports.updateProfile = (req, res) => {
     upload(req, res, function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        
-        const { email, kesan_pesan } = req.body;
+        if (err) {
+            return res.status(400).json({ error: err.message });
+        }
+
+        // Ambil user_id dari token JWT yang sudah diverifikasi oleh authMiddleware
+        const user_id = req.user.id;
+        const { kesan_pesan } = req.body;
         let fotoUrl = null;
 
+        // Jika ada file yang diupload, buat URL-nya
         if (req.file) {
             fotoUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
         }
 
-        let query = "UPDATE users SET kesan_pesan = ?";
-        let values = [kesan_pesan];
+        // Bangun query UPDATE secara dinamis
+        // - Jika ada foto: update kesan_pesan DAN foto_profil
+        // - Jika tidak ada foto: update kesan_pesan saja
+        let query;
+        let values;
 
         if (fotoUrl) {
-            query += ", foto_profil = ?";
-            values.push(fotoUrl);
+            query = 'UPDATE users SET kesan_pesan = ?, foto_profil = ? WHERE id = ?';
+            values = [kesan_pesan || '', fotoUrl, user_id];
+        } else {
+            query = 'UPDATE users SET kesan_pesan = ? WHERE id = ?';
+            values = [kesan_pesan || '', user_id];
         }
 
-        query += " WHERE email = ?";
-        values.push(email);
+        db.query(query, values, (dbErr, result) => {
+            if (dbErr) return res.status(500).json({ error: dbErr.message });
 
-        db.query(query, values, (err, result) => {
-            if (err) return res.status(500).json({ error: err.message });
-            
-            res.status(200).json({ 
-                message: "Profil berhasil diperbarui!", 
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'User tidak ditemukan' });
+            }
+
+            res.status(200).json({
+                message: 'Profil berhasil diperbarui!',
                 foto_url: fotoUrl,
-                kesan_pesan: kesan_pesan
+                kesan_pesan: kesan_pesan || ''
             });
         });
     });
@@ -158,27 +194,24 @@ exports.updateProfile = (req, res) => {
 exports.addGamePoints = (req, res) => {
     const { email, poin_tambahan, nama_game } = req.body;
 
-    // 1. Cari ID user berdasarkan email
     db.query('SELECT id FROM users WHERE email = ?', [email], (err, users) => {
         if (err) return res.status(500).json({ error: err.message });
         if (users.length === 0) return res.status(404).json({ message: 'User tidak ditemukan' });
 
         const user_id = users[0].id;
 
-        // 2. Tambahkan poin ke tabel users
         db.query('UPDATE users SET poin = poin + ? WHERE email = ?', [poin_tambahan, email], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
 
-            // 3. Catat history ke tabel notifications (Aktivitas)
             const judul = `Game Reward! 🎮`;
             const pesan = `Hore! Kamu berhasil mendapatkan ${poin_tambahan} Poin dari permainan ${nama_game}.`;
 
             db.query('INSERT INTO notifications (user_id, judul, pesan) VALUES (?, ?, ?)', [user_id, judul, pesan], (err, notifResult) => {
                 if (err) return res.status(500).json({ error: err.message });
-                
-                res.status(200).json({ 
+
+                res.status(200).json({
                     message: 'Poin berhasil ditambahkan dan aktivitas dicatat!',
-                    poin_tambahan: poin_tambahan 
+                    poin_tambahan: poin_tambahan
                 });
             });
         });
@@ -199,14 +232,13 @@ exports.getUserPoints = (req, res) => {
         if (results.length === 0) {
             return res.status(404).json({ message: 'User tidak ditemukan' });
         }
-        
+
         res.status(200).json({ poin: results[0].poin });
     });
 };
 
 // ==========================================
-// 🔥 FITUR KLAIM REWARD (RESET POIN KE 0 DI DB)
-// Dipanggil saat user menekan tombol "Klaim" di halaman Profile
+// FITUR KLAIM REWARD (RESET POIN KE 0 DI DB)
 // ==========================================
 exports.claimReward = (req, res) => {
     const { email } = req.body;
@@ -215,7 +247,6 @@ exports.claimReward = (req, res) => {
         return res.status(400).json({ message: 'Email wajib diisi!' });
     }
 
-    // 1. Cek apakah user ada dan poin mencukupi (>= 200)
     db.query('SELECT id, poin FROM users WHERE email = ?', [email], (err, users) => {
         if (err) return res.status(500).json({ error: err.message });
         if (users.length === 0) return res.status(404).json({ message: 'User tidak ditemukan' });
@@ -223,16 +254,14 @@ exports.claimReward = (req, res) => {
         const user = users[0];
 
         if (user.poin < 200) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 message: `Poin tidak mencukupi. Poin saat ini: ${user.poin}. Dibutuhkan minimal 200 poin.`
             });
         }
 
-        // 2. Reset poin user ke 0 di database
         db.query('UPDATE users SET poin = 0 WHERE email = ?', [email], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
 
-            // 3. Catat aktivitas klaim reward ke tabel notifications
             const judul = 'Reward Diklaim! 🎁';
             const pesan = 'Selamat! Kamu telah berhasil menukarkan poinmu dengan Voucher Diskon 50%.';
 
@@ -258,32 +287,28 @@ exports.claimReward = (req, res) => {
 exports.forgotPassword = async (req, res) => {
     const { email, newPassword } = req.body;
 
-    // 1. Validasi input
     if (!email || !newPassword) {
         return res.status(400).json({ message: 'Email dan Password baru wajib diisi!' });
     }
 
     try {
-        // 2. Cek apakah email ada di database
         const checkQuery = 'SELECT * FROM users WHERE email = ?';
         db.query(checkQuery, [email], async (err, results) => {
             if (err) return res.status(500).json({ error: err.message });
-            
+
             if (results.length === 0) {
                 return res.status(404).json({ message: 'Email tidak terdaftar!' });
             }
 
-            // 3. Enkripsi Password Baru
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-            // 4. Update Password di Database
             const updateQuery = 'UPDATE users SET password = ? WHERE email = ?';
             db.query(updateQuery, [hashedPassword, email], (updateErr, updateResults) => {
                 if (updateErr) return res.status(500).json({ error: updateErr.message });
 
-                res.status(200).json({ 
-                    message: 'Password berhasil diperbarui! Silakan login kembali.' 
+                res.status(200).json({
+                    message: 'Password berhasil diperbarui! Silakan login kembali.'
                 });
             });
         });

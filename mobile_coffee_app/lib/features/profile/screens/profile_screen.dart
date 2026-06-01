@@ -4,11 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart'; // untuk MediaType
 import '../../../core/config/api_config.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/point_provider.dart';
 
-// 🔥 IMPORT LOGIN SCREEN (Pastikan path ini sesuai dengan folder kamu)
 import '../../auth/screens/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -22,8 +22,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // --- Variabel Data User ---
   String _nama = "Memuat...";
   String _email = "Memuat...";
-  String _kesanPesan = "Memuat...";
-  String? _imagePath;
+  String _kesanPesan = "";
+
+  // URL foto dari server (NetworkImage), null berarti belum ada foto
+  String? _fotoProfilUrl;
+
+  // Flag loading saat sedang upload foto atau simpan kesan pesan
+  bool _isUploadingPhoto = false;
+  bool _isSavingBio = false;
 
   final TextEditingController _bioController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
@@ -34,28 +40,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
   }
 
-  // --- LOGIKA UTAMA: Load data profil lalu fetch poin dari DB ---
+  @override
+  void dispose() {
+    _bioController.dispose();
+    super.dispose();
+  }
+
+  // ============================================================
+  // LOAD DATA PROFIL DARI BACKEND (sumber utama: database)
+  // SharedPreferences hanya dipakai untuk cache nama & email
+  // ============================================================
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString('user_email') ?? 'guest@caffio.com';
+    final token = prefs.getString('token');
 
+    // Ambil nama & email dari SharedPreferences sebagai cache awal
+    // supaya UI tidak kosong saat menunggu API
     if (mounted) {
       setState(() {
         _nama = prefs.getString('user_name') ?? "Guest User";
-        _email = email;
-        _kesanPesan = prefs.getString('user_bio_$email') ??
-            "Halo! Saya sangat suka kopi dan tempat estetik.";
-        _imagePath = prefs.getString('user_image_$email');
+        _email = prefs.getString('user_email') ?? 'guest@caffio.com';
       });
     }
 
-    // Selalu fetch poin terbaru dari database sebagai source of truth
+    // Jika tidak ada token, hentikan (user belum login)
+    if (token == null || token.isEmpty) return;
+
+    try {
+      // Ambil data profil terbaru dari database via API
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/auth/profile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final user = data['user'];
+
+        if (mounted) {
+          setState(() {
+            _nama = user['nama'] ?? _nama;
+            _email = user['email'] ?? _email;
+            _kesanPesan = user['kesan_pesan'] ?? "";
+            _fotoProfilUrl = user['foto_profil']; // URL dari server
+          });
+
+          // Update cache nama & email di SharedPreferences
+          await prefs.setString('user_name', _nama);
+          await prefs.setString('user_email', _email);
+        }
+      }
+    } catch (e) {
+      debugPrint("Gagal load profil dari server: $e");
+      // Jika gagal fetch, biarkan tampil data cache dari SharedPreferences
+    }
+
+    // Fetch poin terbaru dari database
+    final email = prefs.getString('user_email') ?? _email;
     if (email != 'guest@caffio.com' && mounted) {
       await Provider.of<PointProvider>(context, listen: false).fetchPoinFromDB();
     }
   }
 
-  // Fungsi klaim reward: reset poin di DB lalu update provider
+  // ============================================================
+  // KLAIM REWARD
+  // ============================================================
   Future<void> _claimReward() async {
     try {
       final url = Uri.parse('${ApiConfig.baseUrl}/auth/claim-reward');
@@ -66,7 +118,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
 
       if (response.statusCode == 200) {
-        // Reset poin di provider (UI langsung update)
         if (mounted) {
           Provider.of<PointProvider>(context, listen: false).resetPoin();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -100,31 +151,205 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // ============================================================
+  // PICK & UPLOAD FOTO PROFIL KE BACKEND
+  // ============================================================
   Future<void> _pickProfileImage() async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 50,
+        imageQuality: 70,
       );
 
-      if (pickedFile != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_image_$_email', pickedFile.path);
-        setState(() {
-          _imagePath = pickedFile.path;
-        });
+      if (pickedFile == null) return;
+
+      setState(() {
+        _isUploadingPhoto = true;
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Sesi habis. Silakan login kembali."),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() => _isUploadingPhoto = false);
+        return;
+      }
+
+      // Kirim foto ke backend menggunakan multipart/form-data
+      final uri = Uri.parse('${ApiConfig.baseUrl}/auth/update-profile');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Tambahkan header Authorization
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Tentukan MIME type secara eksplisit berdasarkan ekstensi file.
+      // Ini penting karena Flutter/Android kadang mengirim 'application/octet-stream'
+      // yang akan ditolak oleh filter multer di backend.
+      final fileExtension = pickedFile.path.split('.').last.toLowerCase();
+      final mimeType = _getMimeType(fileExtension);
+
+      // Tambahkan file foto dengan contentType yang eksplisit
+      request.files.add(await http.MultipartFile.fromPath(
+        'foto_profil',
+        pickedFile.path,
+        contentType: MediaType.parse(mimeType),
+      ));
+
+      // Tambahkan kesan_pesan yang sudah ada (wajib karena backend butuh field ini)
+      request.fields['kesan_pesan'] = _kesanPesan;
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final newFotoUrl = data['foto_url'];
+
+        if (mounted) {
+          setState(() {
+            _fotoProfilUrl = newFotoUrl; // Update URL foto dari server
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("✅ Foto profil berhasil diperbarui!"),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        final errorData = jsonDecode(response.body);
+        debugPrint("Gagal upload foto: ${response.body}");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  "Gagal upload foto: ${errorData['message'] ?? errorData['error'] ?? 'Unknown error'}"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
-      print("Gagal mengambil foto: $e");
+      debugPrint("Error upload foto: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Gagal mengambil atau mengupload foto."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+      }
     }
   }
 
+  // ============================================================
+  // SIMPAN KESAN & PESAN KE BACKEND (DATABASE)
+  // ============================================================
   Future<void> _saveKesanPesan(String newBio) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_bio_$_email', newBio);
-    setState(() {
-      _kesanPesan = newBio;
-    });
+    setState(() => _isSavingBio = true);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Sesi habis. Silakan login kembali."),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Kirim kesan pesan ke backend
+      // Menggunakan multipart supaya konsisten dengan endpoint update-profile
+      final uri = Uri.parse('${ApiConfig.baseUrl}/auth/update-profile');
+      final request = http.MultipartRequest('POST', uri);
+
+      request.headers['Authorization'] = 'Bearer $token';
+      request.fields['kesan_pesan'] = newBio;
+      // Tidak ada file foto — hanya update kesan_pesan saja
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          setState(() {
+            _kesanPesan = newBio;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("✅ Kesan & Pesan berhasil disimpan!"),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        final errorData = jsonDecode(response.body);
+        debugPrint("Gagal simpan kesan pesan: ${response.body}");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  "Gagal menyimpan: ${errorData['message'] ?? errorData['error'] ?? 'Unknown error'}"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Error save kesan pesan: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Koneksi bermasalah. Periksa jaringanmu."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingBio = false);
+      }
+    }
+  }
+
+  // ============================================================
+  // DIALOG EDIT KESAN & PESAN
+  // ============================================================
+  // Helper: dapatkan MIME type yang benar berdasarkan ekstensi file
+  // Ini memastikan backend menerima MIME type yang valid, tidak peduli
+  // MIME type apa yang dikirim oleh Android/iOS secara default.
+  String _getMimeType(String extension) {
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg'; // fallback aman untuk semua gambar dari gallery
+    }
   }
 
   void _showEditBioDialog() {
@@ -163,19 +388,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15)),
             ),
-            onPressed: () {
-              _saveKesanPesan(_bioController.text);
-              Navigator.pop(context);
-            },
-            child: const Text("Simpan",
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+            onPressed: _isSavingBio
+                ? null
+                : () async {
+                    Navigator.pop(context);
+                    await _saveKesanPesan(_bioController.text);
+                  },
+            child: _isSavingBio
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2),
+                  )
+                : const Text("Simpan",
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
+  // ============================================================
+  // LOGOUT
+  // ============================================================
   Future<void> _logout() async {
     showDialog(
       context: context,
@@ -228,7 +465,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- UI ---
+  // ============================================================
+  // HELPER: Widget untuk menampilkan foto profil
+  // Menggunakan NetworkImage jika ada URL dari server,
+  // fallback ke icon jika belum ada foto
+  // ============================================================
+  Widget _buildProfileAvatar() {
+    return Stack(
+      alignment: Alignment.bottomRight,
+      children: [
+        GestureDetector(
+          onTap: _isUploadingPhoto ? null : _pickProfileImage,
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.brown[100],
+              shape: BoxShape.circle,
+            ),
+            child: CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.brown[50],
+              // Tampilkan foto dari URL server jika ada
+              backgroundImage: _fotoProfilUrl != null && _fotoProfilUrl!.isNotEmpty
+                  ? NetworkImage(_fotoProfilUrl!)
+                  : null,
+              child: _fotoProfilUrl == null || _fotoProfilUrl!.isEmpty
+                  ? const Icon(Icons.person, size: 50, color: Colors.brown)
+                  : null,
+            ),
+          ),
+        ),
+        // Loading indicator saat upload
+        if (_isUploadingPhoto)
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black26,
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
+              ),
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.brown[700],
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+            ),
+            child: const Icon(Icons.camera_alt,
+                color: Colors.white, size: 16),
+          ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // UI
+  // ============================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -261,42 +561,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Column(
                 children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      GestureDetector(
-                        onTap: _pickProfileImage,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.brown[100],
-                            shape: BoxShape.circle,
-                          ),
-                          child: CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.brown[50],
-                            backgroundImage: _imagePath != null
-                                ? FileImage(File(_imagePath!))
-                                : null,
-                            child: _imagePath == null
-                                ? const Icon(Icons.person,
-                                    size: 50, color: Colors.brown)
-                                : null,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.brown[700],
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                        ),
-                        child: const Icon(Icons.camera_alt,
-                            color: Colors.white, size: 16),
-                      ),
-                    ],
-                  ),
+                  _buildProfileAvatar(),
                   const SizedBox(height: 15),
                   Text(_nama,
                       style: const TextStyle(
@@ -311,7 +576,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 25),
 
-            // --- KARTU POIN REWARD (menggunakan Consumer agar selalu sinkron dengan DB) ---
+            // --- KARTU POIN REWARD ---
             Consumer<PointProvider>(
               builder: (context, pointProvider, child) {
                 final int poinSaatIni = pointProvider.poin;
@@ -399,7 +664,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 15),
 
-                    // --- TOMBOL KLAIM REWARD: hanya muncul jika poin >= 200 ---
                     if (bisaKlaim)
                       Container(
                         margin: const EdgeInsets.only(bottom: 20),
@@ -443,7 +707,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
 
-            // --- KARTU KESAN & PESAN (Bio) ---
+            // --- KARTU KESAN & PESAN ---
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -483,11 +747,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: Colors.grey[50],
                         borderRadius: BorderRadius.circular(15)),
                     child: Text(
-                      _kesanPesan,
+                      _kesanPesan.isEmpty
+                          ? "Belum ada kesan & pesan. Ketuk ikon edit untuk menambahkan."
+                          : _kesanPesan,
                       style: TextStyle(
                           fontSize: 14,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey[700],
+                          fontStyle: _kesanPesan.isEmpty
+                              ? FontStyle.normal
+                              : FontStyle.italic,
+                          color: _kesanPesan.isEmpty
+                              ? Colors.grey[400]
+                              : Colors.grey[700],
                           height: 1.5),
                     ),
                   ),
