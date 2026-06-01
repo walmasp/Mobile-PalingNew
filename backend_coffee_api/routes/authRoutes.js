@@ -9,13 +9,17 @@ router.get('/profile', authMiddleware.verifyToken, authController.getProfile);
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 
-// 🔥 Cukup panggil controllernya saja, karena Multer sudah di-handle di dalam authController
+// Update profil (foto & kesan pesan)
 router.post('/update-profile', authController.updateProfile);
 
 // Endpoint untuk menyimpan poin dari Mini Games
 router.post('/add-points', authController.addGamePoints);
 
+// Endpoint untuk mengambil poin user (dipakai oleh ProfileScreen & PointProvider)
 router.post('/get-poin', authController.getUserPoints);
+
+// 🔥 Endpoint baru: klaim reward (reset poin ke 0 di DB)
+router.post('/claim-reward', authController.claimReward);
 
 // Endpoint untuk Forgot Password
 router.post('/forgot-password', authController.forgotPassword);

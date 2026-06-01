@@ -11,6 +11,8 @@ import 'package:latlong2/latlong.dart';
 import '../../features/mini_games/screens/games_menu_screen.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../features/ai/screens/ai_barista_screen.dart'; // Sesuaikan folder kamu
+import 'package:provider/provider.dart';
+import '../../core/utils/point_provider.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -28,6 +30,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const GamesMenuScreen(),
     const ProfileScreen(),
   ];
+
+  // 🔥 PERBAIKAN POIN: Fetch poin terbaru dari DB setiap kali tab Profile dibuka
+  void _onTabTapped(int index) {
+    setState(() => _currentIndex = index);
+    if (index == 3) {
+      Provider.of<PointProvider>(context, listen: false).fetchPoinFromDB();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +100,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget _buildNavItem({required IconData icon, required String label, required int index}) {
     bool isSelected = _currentIndex == index;
     return InkWell(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () => _onTabTapped(index),
       customBorder: const CircleBorder(),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10.0),

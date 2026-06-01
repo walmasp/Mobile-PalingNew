@@ -89,7 +89,7 @@ exports.login = (req, res) => {
                 role: user.role,
                 foto_profil: user.foto_profil, 
                 kesan_pesan: user.kesan_pesan,
-                poin: user.poin // 🔥 PERBAIKAN: Poin ikut dikirim ke HP saat login
+                poin: user.poin // 🔥 Poin ikut dikirim ke HP saat login
             }
         });
     });
@@ -99,7 +99,6 @@ exports.login = (req, res) => {
 exports.getProfile = (req, res) => {
     const user_id = req.user.id;
 
-    // 🔥 PERBAIKAN: Tambahkan 'poin' ke dalam daftar yang diambil dari database
     const query = 'SELECT id, nama, email, role, foto_profil, kesan_pesan, poin FROM users WHERE id = ?';
 
     db.query(query, [user_id], (err, results) => {
@@ -117,38 +116,30 @@ exports.getProfile = (req, res) => {
 };
 
 // ==========================================
-// 🔥 PERBAIKAN: FITUR UPDATE PROFIL (FOTO & KESAN PESAN)
+// 🔥 FITUR UPDATE PROFIL (FOTO & KESAN PESAN)
 // ==========================================
 exports.updateProfile = (req, res) => {
     upload(req, res, function (err) {
-        // Tangani error multer
         if (err) return res.status(500).json({ error: err.message });
         
-        // Tangkap data yang dikirim dari Flutter (karena pakai FormData, ada di req.body)
         const { email, kesan_pesan } = req.body;
         let fotoUrl = null;
 
-        // Jika user mengupload foto baru
         if (req.file) {
-            // URL otomatis mendeteksi protokol (http/https) dan host/IP komputer kamu
             fotoUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
         }
 
-        // Siapkan query update untuk MySQL
         let query = "UPDATE users SET kesan_pesan = ?";
         let values = [kesan_pesan];
 
-        // Jika foto juga dikirim, tambahkan ke query
         if (fotoUrl) {
             query += ", foto_profil = ?";
             values.push(fotoUrl);
         }
 
-        // Kondisi update berdasarkan email
         query += " WHERE email = ?";
         values.push(email);
 
-        // Eksekusi query ke database
         db.query(query, values, (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
             
@@ -194,7 +185,9 @@ exports.addGamePoints = (req, res) => {
     });
 };
 
-// Fungsi untuk mengambil sisa poin user
+// ==========================================
+// FITUR AMBIL POIN USER
+// ==========================================
 exports.getUserPoints = (req, res) => {
     const { email } = req.body;
 
@@ -207,10 +200,56 @@ exports.getUserPoints = (req, res) => {
             return res.status(404).json({ message: 'User tidak ditemukan' });
         }
         
-        // Kirimkan jumlah poin ke Flutter
         res.status(200).json({ poin: results[0].poin });
     });
+};
 
+// ==========================================
+// 🔥 FITUR KLAIM REWARD (RESET POIN KE 0 DI DB)
+// Dipanggil saat user menekan tombol "Klaim" di halaman Profile
+// ==========================================
+exports.claimReward = (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ message: 'Email wajib diisi!' });
+    }
+
+    // 1. Cek apakah user ada dan poin mencukupi (>= 200)
+    db.query('SELECT id, poin FROM users WHERE email = ?', [email], (err, users) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (users.length === 0) return res.status(404).json({ message: 'User tidak ditemukan' });
+
+        const user = users[0];
+
+        if (user.poin < 200) {
+            return res.status(400).json({ 
+                message: `Poin tidak mencukupi. Poin saat ini: ${user.poin}. Dibutuhkan minimal 200 poin.`
+            });
+        }
+
+        // 2. Reset poin user ke 0 di database
+        db.query('UPDATE users SET poin = 0 WHERE email = ?', [email], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            // 3. Catat aktivitas klaim reward ke tabel notifications
+            const judul = 'Reward Diklaim! 🎁';
+            const pesan = 'Selamat! Kamu telah berhasil menukarkan poinmu dengan Voucher Diskon 50%.';
+
+            db.query(
+                'INSERT INTO notifications (user_id, judul, pesan) VALUES (?, ?, ?)',
+                [user.id, judul, pesan],
+                (err) => {
+                    if (err) return res.status(500).json({ error: err.message });
+
+                    res.status(200).json({
+                        message: 'Reward berhasil diklaim! Poin telah direset.',
+                        poin_sekarang: 0
+                    });
+                }
+            );
+        });
+    });
 };
 
 // ==========================================

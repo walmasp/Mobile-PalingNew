@@ -4,7 +4,9 @@ import 'package:proximity_sensor/proximity_sensor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../../../core/config/api_config.dart'; // Sesuaikan path config API kamu
+import 'package:provider/provider.dart';
+import '../../../core/config/api_config.dart';
+import '../../../core/utils/point_provider.dart';
 
 class EspressoExtractorScreen extends StatefulWidget {
   const EspressoExtractorScreen({super.key});
@@ -37,6 +39,7 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
     super.dispose();
   }
 
+  // Simpan poin ke database dan update PointProvider
   Future<void> _savePointsToDatabase(int poinDidapat, String namaGame) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -56,32 +59,22 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
       );
 
       if (response.statusCode == 200) {
-        print("Poin berhasil disimpan ke database!");
+        debugPrint("Poin berhasil disimpan ke database!");
+        // Setelah sukses simpan ke DB, fetch poin terbaru ke PointProvider
+        if (mounted) {
+          await Provider.of<PointProvider>(context, listen: false)
+              .fetchPoinFromDB();
+        }
       } else {
-        print("Gagal API Poin: ${response.body}");
+        debugPrint("Gagal API Poin: ${response.body}");
       }
     } catch (e) {
-      print("Error API Poin: $e");
+      debugPrint("Error API Poin: $e");
     }
   }
 
   Future<void> _addPoints() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? savedEmail = prefs.getString('user_email');
-    
-    if (savedEmail != null) {
-      // Simpan ke key spesifik akun yang sedang login
-      String key = 'total_points_$savedEmail';
-      int currentPoints = prefs.getInt(key) ?? prefs.getInt('total_points') ?? 0;
-      await prefs.setInt(key, currentPoints + 2);
-    } else {
-      // Fallback jika email tidak ditemukan
-      int currentPoints = prefs.getInt('total_points') ?? 0;
-      await prefs.setInt('total_points', currentPoints + 2);
-    }
-
-    // Ganti teks "Nama Game" sesuai dengan file gamenya (Espresso Extractor / Barista Balance)
-    await _savePointsToDatabase(2, "Espresso Extractor"); 
+    await _savePointsToDatabase(2, "Espresso Extractor");
   }
 
   void _initProximitySensor() {
@@ -177,7 +170,8 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
           title: const Text(
             "✨ LUAR BIASA! ✨",
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.brown, fontWeight: FontWeight.bold),
+            style:
+                TextStyle(color: Colors.brown, fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -254,7 +248,8 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
       ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25.0, vertical: 20),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 25.0, vertical: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -281,7 +276,8 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: _isGameOver ? Colors.redAccent : Colors.brown[800],
+                    color:
+                        _isGameOver ? Colors.redAccent : Colors.brown[800],
                   ),
                 ),
               ),
@@ -359,7 +355,8 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
                         value: _heatLevel / 100,
                         minHeight: 12,
                         backgroundColor: Colors.grey[100],
-                        valueColor: AlwaysStoppedAnimation<Color>(heatColor),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(heatColor),
                       ),
                     ),
                   ],
@@ -368,13 +365,16 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
               const SizedBox(height: 50),
               Transform.translate(
                 offset: Offset(
-                  (_heatLevel > 80 && _isNear) ? (_heatLevel % 3 - 1.5) * 3 : 0,
+                  (_heatLevel > 80 && _isNear)
+                      ? (_heatLevel % 3 - 1.5) * 3
+                      : 0,
                   0,
                 ),
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: _heatLevel > 80 ? Colors.red[50] : Colors.brown[50],
+                    color:
+                        _heatLevel > 80 ? Colors.red[50] : Colors.brown[50],
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

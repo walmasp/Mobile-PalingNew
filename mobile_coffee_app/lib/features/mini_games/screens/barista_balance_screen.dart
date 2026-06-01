@@ -5,7 +5,9 @@ import 'package:light/light.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
 import '../../../core/config/api_config.dart';
+import '../../../core/utils/point_provider.dart';
 
 class BaristaBalanceScreen extends StatefulWidget {
   const BaristaBalanceScreen({super.key});
@@ -43,14 +45,13 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
     super.dispose();
   }
 
-  // 🔥 FUNGSI BARU: SIMPAN KE DATABASE & AKTIVITAS
+  // Simpan poin ke database dan update PointProvider
   Future<void> _savePointsToDatabase(int poinDidapat, String namaGame) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       String? savedEmail = prefs.getString('user_email');
       if (savedEmail == null) return;
 
-      // Tambahkan /auth di tengahnya
       var url = Uri.parse('${ApiConfig.baseUrl}/auth/add-points');
 
       var response = await http.post(
@@ -64,32 +65,22 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
       );
 
       if (response.statusCode == 200) {
-        print("Poin berhasil disimpan ke database!");
+        debugPrint("Poin berhasil disimpan ke database!");
+        // Setelah sukses simpan ke DB, fetch poin terbaru ke PointProvider
+        if (mounted) {
+          await Provider.of<PointProvider>(context, listen: false)
+              .fetchPoinFromDB();
+        }
       } else {
-        print("Gagal API Poin: ${response.body}");
+        debugPrint("Gagal API Poin: ${response.body}");
       }
     } catch (e) {
-      print("Error API Poin: $e");
+      debugPrint("Error API Poin: $e");
     }
   }
 
   Future<void> _addPoints() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? savedEmail = prefs.getString('user_email');
-    
-    if (savedEmail != null) {
-      // Simpan ke key spesifik akun yang sedang login
-      String key = 'total_points_$savedEmail';
-      int currentPoints = prefs.getInt(key) ?? prefs.getInt('total_points') ?? 0;
-      await prefs.setInt(key, currentPoints + 2);
-    } else {
-      // Fallback jika email tidak ditemukan
-      int currentPoints = prefs.getInt('total_points') ?? 0;
-      await prefs.setInt('total_points', currentPoints + 2);
-    }
-
-    // Ganti teks "Nama Game" sesuai dengan file gamenya (Espresso Extractor / Barista Balance)
-    await _savePointsToDatabase(2, "Coffee Balance"); 
+    await _savePointsToDatabase(2, "Coffee Balance");
   }
 
   void _initLightSensor() {
@@ -254,9 +245,8 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
   Widget build(BuildContext context) {
     Color bgColor = _isDarkMode ? const Color(0xFF1A1A1A) : Colors.grey[50]!;
     Color textColor = _isDarkMode ? Colors.white : Colors.black87;
-    Color appBarColor = _isDarkMode
-        ? const Color(0xFF1A1A1A)
-        : Colors.grey[50]!;
+    Color appBarColor =
+        _isDarkMode ? const Color(0xFF1A1A1A) : Colors.grey[50]!;
     Color iconBgColor = _isDarkMode ? Colors.grey[800]! : Colors.white;
 
     return Scaffold(
@@ -276,7 +266,8 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 color: _isDarkMode ? Colors.grey[850] : Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -315,8 +306,8 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
               _isPlaying
                   ? "Keep it balanced!"
                   : _isGameOver
-                  ? "Oops, spilled! 😭"
-                  : "Ready to be a Barista?",
+                      ? "Oops, spilled! 😭"
+                      : "Ready to be a Barista?",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -325,7 +316,8 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
             ),
             const SizedBox(height: 15),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               decoration: BoxDecoration(
                 color: _timeLeft <= 10 ? Colors.red[50] : Colors.brown[50],
                 borderRadius: BorderRadius.circular(20),
@@ -335,7 +327,8 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
                 style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,
-                  color: _timeLeft <= 10 ? Colors.redAccent : Colors.brown[700],
+                  color:
+                      _timeLeft <= 10 ? Colors.redAccent : Colors.brown[700],
                 ),
               ),
             ),
@@ -361,7 +354,8 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
                       ? Icons.water_drop_rounded
                       : Icons.local_cafe_rounded,
                   size: 80,
-                  color: _isGameOver ? Colors.blueAccent : Colors.brown[700],
+                  color:
+                      _isGameOver ? Colors.blueAccent : Colors.brown[700],
                 ),
               ),
             ),
@@ -372,9 +366,8 @@ class _BaristaBalanceScreenState extends State<BaristaBalanceScreen> {
                 height: 55,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isDarkMode
-                        ? Colors.brown[500]
-                        : Colors.brown[700],
+                    backgroundColor:
+                        _isDarkMode ? Colors.brown[500] : Colors.brown[700],
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
