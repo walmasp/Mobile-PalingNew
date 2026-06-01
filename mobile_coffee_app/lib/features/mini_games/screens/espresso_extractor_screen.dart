@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:proximity_sensor/proximity_sensor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// 🔥 TAMBAHAN IMPORT UNTUK API
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/config/api_config.dart'; // Sesuaikan path config API kamu
@@ -38,7 +37,6 @@ class _EspressoExtractorScreenState extends State<EspressoExtractorScreen> {
     super.dispose();
   }
 
-  // 🔥 FUNGSI BARU: SIMPAN KE DATABASE & AKTIVITAS
   Future<void> _savePointsToDatabase(int poinDidapat, String namaGame) async {
     try {
       final prefs = await SharedPreferences.getInstance();

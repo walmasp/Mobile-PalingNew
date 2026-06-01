@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:light/light.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// 🔥 TAMBAHAN IMPORT UNTUK API
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/config/api_config.dart';

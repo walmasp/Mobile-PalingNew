@@ -4,7 +4,7 @@ import '../../../data/services/recommendation_service.dart';
 class RecommendationSection extends StatefulWidget {
   final String userId;
 
-  const RecommendationSection({Key? key, required this.userId}) : super(key: key);
+  const RecommendationSection({super.key, required this.userId});
 
   @override
   State<RecommendationSection> createState() => _RecommendationSectionState();
