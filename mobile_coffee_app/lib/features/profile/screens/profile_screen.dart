@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -540,6 +539,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         foregroundColor: Colors.brown[800],
         elevation: 0,
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout),
+            color: Colors.redAccent,
+            tooltip: "Keluar",
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
@@ -766,27 +773,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 35),
 
-            // --- TOMBOL LOGOUT ---
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.redAccent,
-                  elevation: 0,
-                  side:
-                      BorderSide(color: Colors.redAccent.withOpacity(0.3)),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                ),
-                icon: const Icon(Icons.logout),
-                label: const Text("Keluar",
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
-                onPressed: _logout,
-              ),
-            ),
             const SizedBox(height: 30),
           ],
         ),

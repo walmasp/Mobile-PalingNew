@@ -1,3 +1,3 @@
 class ApiConfig {
-  static const String baseUrl = 'http://192.168.1.23:3000/api'; // Tambah /auth
+  static const String baseUrl = 'http://10.66.46.236:3000/api'; 
 }

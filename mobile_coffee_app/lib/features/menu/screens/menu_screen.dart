@@ -24,7 +24,6 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Map<String, dynamic> cart = {};
 
-  // 🔥 VARIABEL MATA UANG UNIVERSAL (TIDAK DIUBAH)
   String selectedCurrency = 'IDR';
   Map<String, double> exchangeRates = {
     'IDR': 1.0,
@@ -141,7 +140,6 @@ class _MenuScreenState extends State<MenuScreen> {
           'harga': double.parse(menu['harga'].toString()).toInt(),
           'jumlah': 1,
           'catatan': '',
-          // 👇 INI TAMBAHANNYA AGAR GAMBAR MASUK KE KERANJANG
           'foto_url': menu['foto_url'], 
         };
       }
@@ -166,7 +164,6 @@ class _MenuScreenState extends State<MenuScreen> {
     return total;
   }
 
-  // --- UI BARU (CAFFIO APP STYLE) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -313,7 +310,7 @@ class _MenuScreenState extends State<MenuScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        // Dropdown Currency dibalut dengan UI yang cantik
+                        // Dropdown Currency
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           decoration: BoxDecoration(
