@@ -236,3 +236,44 @@ exports.createNotification = (req, res) => {
         });
     });
 };
+
+// ==========================================
+// FITUR LIHAT DETAIL BOOKING (STRUK DIGITAL)
+// ==========================================
+exports.getBookingDetails = (req, res) => {
+    const bookingId = req.params.id;
+    const userId = req.user.id; // Pastikan hanya user yang bersangkutan yang bisa lihat
+
+    // 1. Ambil data utama booking, digabung dengan nama cafe dan meja
+    const queryBooking = `
+        SELECT b.id, b.tanggal_booking, b.jam_mulai, b.jam_selesai, b.jumlah_orang, b.status, b.total_harga, 
+               c.nama_cafe, t.nomor_meja, t.area
+        FROM bookings b
+        JOIN cafes c ON b.cafe_id = c.id
+        JOIN tables t ON b.table_id = t.id
+        WHERE b.id = ? AND b.user_id = ?
+    `;
+
+    db.query(queryBooking, [bookingId, userId], (err, bookingResults) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (bookingResults.length === 0) return res.status(404).json({ message: 'Detail booking tidak ditemukan' });
+
+        const bookingData = bookingResults[0];
+
+        // 2. Ambil daftar kopi/menu yang dipesan di booking ini
+        const queryItems = `
+            SELECT bd.jumlah, bd.harga_satuan, m.nama_menu
+            FROM booking_details bd
+            JOIN menus m ON bd.menu_id = m.id
+            WHERE bd.booking_id = ?
+        `;
+
+        db.query(queryItems, [bookingId], (err, itemResults) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            // Gabungkan data kopi ke dalam data booking
+            bookingData.items = itemResults;
+            res.status(200).json({ data: bookingData });
+        });
+    });
+};

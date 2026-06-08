@@ -22,6 +22,8 @@ router.get('/notifications/me', authMiddleware.verifyToken, bookingController.ge
 // 2. Menyimpan notifikasi baru (Pemicu dari Flutter saat bayar/menang game)
 router.post('/notifications', authMiddleware.verifyToken, bookingController.createNotification);
 
+// Melihat detail satu booking beserta item kopinya
+router.get('/details/:id', authMiddleware.verifyToken, bookingController.getBookingDetails);
 
 // ==========================================
 // URL UNTUK ADMIN / KASIR

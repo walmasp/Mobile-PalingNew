@@ -7,7 +7,7 @@ class BookingService {
   static Future<Map<String, dynamic>> createBooking({
     required int cafeId,
     required int tableId,
-    required int jumlahOrang, // Parameter baru yang sebelumnya kurang
+    required int jumlahOrang, // Dikirim ke Node.js
     required List<Map<String, dynamic>> items,
     required String tanggal,
     required String jamMulai,
@@ -52,12 +52,36 @@ class BookingService {
         Uri.parse('${ApiConfig.baseUrl}/bookings/status/$bookingId'),
         headers: headers,
       );
+
       if (response.statusCode == 200) {
         return jsonDecode(response.body)['status'];
+      } else {
+        throw Exception('Gagal mengecek status');
       }
-      return 'menunggu_pembayaran';
     } catch (e) {
-      return 'menunggu_pembayaran';
+      throw Exception('Error: $e');
+    }
+  }
+
+  // ==========================================
+  // 🔥 FUNGSI BARU: AMBIL DETAIL BOOKING (STRUK)
+  // ==========================================
+  static Future<Map<String, dynamic>> getBookingDetails(int bookingId) async {
+    try {
+      final headers = await getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/bookings/details/$bookingId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['data'];
+      } else {
+        final data = jsonDecode(response.body);
+        throw Exception(data['message'] ?? 'Gagal mengambil detail booking');
+      }
+    } catch (e) {
+      throw Exception('Gagal menghubungi server: $e');
     }
   }
 }
