@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart'; // untuk MediaType
 import '../../../core/config/api_config.dart';
 import 'package:provider/provider.dart';
+import '../../booking/screens/booking_history_screen.dart';
 import '../../../core/utils/point_provider.dart';
 
 import '../../auth/screens/login_screen.dart';
@@ -540,13 +541,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout),
-            color: Colors.redAccent,
-            tooltip: "Keluar",
-          ),
-        ],
+  IconButton(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const BookingHistoryScreen(),
+        ),
+      );
+    },
+    icon: const Icon(Icons.receipt_long_rounded),
+    color: Colors.brown[700],
+    tooltip: "Riwayat Booking",
+  ),
+  IconButton(
+    onPressed: _logout,
+    icon: const Icon(Icons.logout),
+    color: Colors.redAccent,
+    tooltip: "Keluar",
+  ),
+],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),

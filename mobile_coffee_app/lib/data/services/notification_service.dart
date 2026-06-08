@@ -5,19 +5,33 @@ import '../../../core/config/api_config.dart';
 
 class NotificationService {
   // Fungsi untuk mengirim data notifikasi ke database via Backend
-  static Future<void> createNotification(String judul, String pesan) async {
+  // bookingId bersifat opsional — hanya diisi jika notifikasi terkait booking
+  static Future<void> createNotification(
+    String judul,
+    String pesan, {
+    int? bookingId,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
-      // Pastikan endpoint ini (/bookings/notifications) sudah ada di backend Node.js kamu
+      final body = <String, dynamic>{
+        "judul": judul,
+        "pesan": pesan,
+      };
+
+      // Sertakan booking_id hanya jika ada
+      if (bookingId != null) {
+        body["booking_id"] = bookingId;
+      }
+
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/bookings/notifications'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({"judul": judul, "pesan": pesan}),
+        body: jsonEncode(body),
       );
 
       if (response.statusCode == 201) {
