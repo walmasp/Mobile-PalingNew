@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_config.dart';
 import 'package:flutter/material.dart';
 import '../../features/profile/screens/profile_screen.dart';
@@ -10,9 +11,18 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../features/mini_games/screens/games_menu_screen.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../features/ai/screens/ai_barista_screen.dart'; // Sesuaikan folder kamu
+import '../../features/ai/screens/ai_barista_screen.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/point_provider.dart';
+
+// ─── Design Tokens (shared) ──────────────────────────────
+const _brown900 = Color(0xFF3E2723);
+const _brown700 = Color(0xFF5D4037);
+const _brown400 = Color(0xFF8D6E63);
+const _cream = Color(0xFFFAF7F4);
+const _cardBg = Color(0xFFFFFFFF);
+const _inputBorder = Color(0xFFEEE8E4);
+// ────────────────────────────────────────────────────────
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -31,7 +41,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const ProfileScreen(),
   ];
 
-  // 🔥 PERBAIKAN POIN: Fetch poin terbaru dari DB setiap kali tab Profile dibuka
   void _onTabTapped(int index) {
     setState(() => _currentIndex = index);
     if (index == 3) {
@@ -42,53 +51,56 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true, // Agar body (seperti Maps) tidak terpotong background putih navbar
+      extendBody: true,
       body: IndexedStack(index: _currentIndex, children: _pages),
-      
-      // 🔥 1. TOMBOL AI CHATBOT (MENONJOL DI TENGAH)
+
       floatingActionButton: FloatingActionButton(
-        heroTag: 'ai_chatbot_btn', // Tambahkan heroTag untuk menghindari error jika ada FAB lain
+        heroTag: 'ai_chatbot_btn',
         onPressed: () {
-          // Membuka KopiBot AI 🤖☕
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AiBaristaScreen(),
-            ),
+                builder: (context) => const AiBaristaScreen()),
           );
         },
-        backgroundColor: Colors.brown[700],
+        backgroundColor: _brown900,
         foregroundColor: Colors.white,
         shape: const CircleBorder(),
-        elevation: 6,
-        child: const Icon(Icons.smart_toy_rounded, size: 28),
+        elevation: 4,
+        child: const Icon(Icons.smart_toy_rounded, size: 26),
       ),
-      
-      // 🔥 2. POSISI TOMBOL DI TENGAH NAVBAR
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      // 🔥 3. NAVBAR DENGAN LENGKUNGAN (NOTCH)
+      floatingActionButtonLocation:
+          FloatingActionButtonLocation.centerDocked,
+
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
-        color: Colors.white,
-        elevation: 20,
+        color: _cardBg,
+        elevation: 16,
         clipBehavior: Clip.antiAlias,
         child: SizedBox(
-          height: 65,
+          height: 62,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              // SISI KIRI
-              _buildNavItem(icon: Icons.home_filled, label: 'Home', index: 0),
-              _buildNavItem(icon: Icons.map_rounded, label: 'Maps', index: 1),
-              
-              // SPASI KOSONG DI TENGAH (Untuk tempat tombol mengambang)
+            children: [
+              _buildNavItem(
+                  icon: Icons.home_rounded,
+                  label: 'Home',
+                  index: 0),
+              _buildNavItem(
+                  icon: Icons.map_rounded,
+                  label: 'Maps',
+                  index: 1),
               const SizedBox(width: 48),
-
-              // SISI KANAN
-              _buildNavItem(icon: Icons.sports_esports_rounded, label: 'Games', index: 2),
-              _buildNavItem(icon: Icons.person, label: 'Profile', index: 3),
+              _buildNavItem(
+                  icon: Icons.sports_esports_rounded,
+                  label: 'Games',
+                  index: 2),
+              _buildNavItem(
+                  icon: Icons.person_rounded,
+                  label: 'Profile',
+                  index: 3),
             ],
           ),
         ),
@@ -96,29 +108,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  // 🔥 WIDGET CUSTOM UNTUK ITEM NAVBAR
-  Widget _buildNavItem({required IconData icon, required String label, required int index}) {
+  Widget _buildNavItem(
+      {required IconData icon,
+      required String label,
+      required int index}) {
     bool isSelected = _currentIndex == index;
     return InkWell(
       onTap: () => _onTabTapped(index),
       customBorder: const CircleBorder(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10.0),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              color: isSelected ? Colors.brown[700] : Colors.grey[400],
-              size: 26,
+              color: isSelected ? _brown900 : _brown400,
+              size: 24,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.brown[700] : Colors.grey[400],
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? _brown900 : _brown400,
+                fontWeight: isSelected
+                    ? FontWeight.w700
+                    : FontWeight.normal,
                 fontSize: 11,
               ),
             ),
@@ -129,7 +147,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ================= CAFE HOME (AGREGATOR) =================
+// ─────────────────────────────────────────────────────────
+// CAFE HOME SCREEN
+// ─────────────────────────────────────────────────────────
 
 class CafeHomeScreen extends StatefulWidget {
   const CafeHomeScreen({super.key});
@@ -146,10 +166,27 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
   TextEditingController searchController = TextEditingController();
   bool _isSeeAll = false;
 
+  String _userName = "Coffee Lover";
+
   @override
   void initState() {
     super.initState();
     fetchCafes();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      final prefs = await _getPrefs();
+      final name = prefs['user_name'] ?? "Coffee Lover";
+      if (mounted) setState(() => _userName = name);
+    } catch (_) {}
+  }
+
+  // Simple helper to avoid direct SharedPreferences import here
+  Future<Map<String, String?>> _getPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {'user_name': prefs.getString('user_name')};
   }
 
   Future<void> fetchCafes() async {
@@ -162,16 +199,13 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
       });
     } catch (e) {
       print("Error cafe: $e");
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
 
-  // 🔥 FUNGSI PENCARIAN YANG SUDAH DIPERBAIKI
   void filterSearch(String query) {
     setState(() {
-      _isSeeAll = true; // Langsung tampilkan semua jika sedang mencari
+      _isSeeAll = true;
       if (query.isEmpty) {
         filteredCafes = cafes;
       } else {
@@ -185,304 +219,401 @@ class _CafeHomeScreenState extends State<CafeHomeScreen> {
     });
   }
 
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return "Good Morning";
+    if (hour < 15) return "Good Afternoon";
+    if (hour < 19) return "Good Evening";
+    return "Good Night";
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Menentukan jumlah cafe yang tampil
-    List displayedCafes = _isSeeAll
-        ? filteredCafes
-        : filteredCafes.take(3).toList();
+    List displayedCafes =
+        _isSeeAll ? filteredCafes : filteredCafes.take(3).toList();
 
-    // ID User default untuk demo cerdas, gantilah dengan ID dinamis dari sesi login jika ada
-    const String currentUserId = "9"; 
+    const String currentUserId = "9";
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text(
-          "Explore Cafes",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.grey[50],
-        foregroundColor: Colors.brown[800],
-        elevation: 0,
-        centerTitle: false,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 15),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.notifications_none_rounded,
-                color: Colors.brown,
+      backgroundColor: _cream,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // ── Header ────────────────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding:
+                    const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _greeting(),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: _brown400,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _userName,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: _brown900,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Notification + Profile
+                    Row(
+                      children: [
+                        _iconButton(
+                          icon: Icons.notifications_none_rounded,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const ActivityScreen()),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () {},
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: _brown900,
+                              borderRadius:
+                                  BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.person_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ActivityScreen()),
-              ),
             ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Good Morning,",
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 5),
-            const Text(
-              "Find your favorite coffee\nshop near you ☕",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: 25),
 
-            // 🔥 SEARCH BAR AKTIF
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+            // ── Search Bar ────────────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: _cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                        color: _inputBorder, width: 1.5),
                   ),
-                ],
-              ),
-              child: TextField(
-                controller: searchController,
-                onChanged: filterSearch, // Tersambung ke fungsi search
-                decoration: const InputDecoration(
-                  hintText: "Search cafe or location...",
-                  hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                  border: InputBorder.none,
-                  prefixIcon: Icon(Icons.search, color: Colors.brown),
-                ),
-              ),
-            ),
-            const SizedBox(height: 25),
-
-            // 🔥 INTEGRASI FITUR AI/ML: SMART RECOMMENDATION SYSTEM MENU
-            const RecommendationSection(userId: currentUserId),
-            const SizedBox(height: 25),
-
-            // 🔥 HEADER KATEGORI & SEE ALL
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Recommended For You",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                TextButton(
-                  onPressed: () => setState(() => _isSeeAll = !_isSeeAll),
-                  child: Text(
-                    _isSeeAll ? "Show Less" : "See All",
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: filterSearch,
                     style: const TextStyle(
-                      color: Colors.brown,
-                      fontWeight: FontWeight.bold,
+                        fontSize: 14, color: _brown900),
+                    decoration: const InputDecoration(
+                      hintText: "Search cafe or location...",
+                      hintStyle: TextStyle(
+                          color: _brown400, fontSize: 14),
+                      prefixIcon: Icon(Icons.search_rounded,
+                          color: _brown400, size: 20),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                          vertical: 15),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
 
-            // 🔥 LIST CAFE SESUAI DATABASE
+            // ── AI Recommendation Section ──────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding:
+                    const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                child: RecommendationSection(
+                    userId: currentUserId),
+              ),
+            ),
+
+            // ── Section Header ────────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding:
+                    const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                child: Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Cafes Near You",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _brown900,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () =>
+                          setState(() => _isSeeAll = !_isSeeAll),
+                      child: Text(
+                        _isSeeAll ? "Show Less" : "See All",
+                        style: const TextStyle(
+                          color: _brown700,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Cafe List ─────────────────────────────────
             isLoading
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(color: Colors.brown),
+                ? const SliverToBoxAdapter(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: CircularProgressIndicator(
+                            color: _brown700),
+                      ),
                     ),
                   )
                 : displayedCafes.isEmpty
-                ? const Center(
-                    child: Text(
-                      "Kafe tidak ditemukan.",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: displayedCafes.length,
-                    itemBuilder: (context, index) {
-                      final cafe = displayedCafes[index];
-                      return _buildCafeCard(context, cafe);
-                    },
-                  ),
+                    ? const SliverToBoxAdapter(
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32),
+                            child: Text(
+                              "Kafe tidak ditemukan.",
+                              style: TextStyle(color: _brown400),
+                            ),
+                          ),
+                        ),
+                      )
+                    : SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                            20, 0, 20, 100),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) =>
+                                _buildCafeCard(
+                                    context,
+                                    displayedCafes[index]),
+                            childCount: displayedCafes.length,
+                          ),
+                        ),
+                      ),
           ],
         ),
       ),
     );
   }
 
+  Widget _iconButton(
+      {required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _inputBorder, width: 1.5),
+        ),
+        child: Icon(icon, color: _brown900, size: 20),
+      ),
+    );
+  }
+
   Widget _buildCafeCard(BuildContext context, Map cafe) {
-    String rating = cafe['rating'] != null ? cafe['rating'].toString() : "4.5";
+    String rating =
+        cafe['rating'] != null ? cafe['rating'].toString() : "4.5";
     String? fotoUrl = cafe['foto_url'];
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MenuScreen(
-              cafeId: cafe['id'],
-              cafeName: cafe['nama_cafe'] ?? 'Cafe',
-            ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MenuScreen(
+            cafeId: cafe['id'],
+            cafeName: cafe['nama_cafe'] ?? 'Cafe',
           ),
-        );
-      },
+        ),
+      ),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        padding: const EdgeInsets.all(15),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(25),
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _inputBorder, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
+              color: _brown900.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Container(
-                width: 90,
-                height: 90,
-                color: Colors.brown[50],
-                child: fotoUrl != null && fotoUrl.isNotEmpty
-                    ? Image.network(
-                        fotoUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                              Icons.storefront_rounded,
-                              size: 40,
-                              color: Colors.brown,
-                            ),
-                      )
-                    : const Icon(
-                        Icons.storefront_rounded,
-                        size: 40,
-                        color: Colors.brown,
-                      ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              // ── Cafe Image ──────────────────────────
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  width: 88,
+                  height: 88,
+                  color: const Color(0xFFF3EDE8),
+                  child: fotoUrl != null && fotoUrl.isNotEmpty
+                      ? Image.network(
+                          fotoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(
+                            Icons.storefront_rounded,
+                            size: 36,
+                            color: _brown400,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.storefront_rounded,
+                          size: 36,
+                          color: _brown400,
+                        ),
+                ),
               ),
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          cafe['nama_cafe'] ?? 'Tanpa Nama',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            color: Colors.orange,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            rating,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
-                              fontSize: 13,
+              const SizedBox(width: 14),
+
+              // ── Cafe Details ────────────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            cafe['nama_cafe'] ?? 'Tanpa Nama',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: _brown900,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    cafe['alamat'] ?? 'Alamat tidak tersedia',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.brown,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        "Nearby",
-                        style: TextStyle(
-                          color: Colors.brown,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
                         ),
-                      ),
-                      const SizedBox(width: 15),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                        const SizedBox(width: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.star_rounded,
+                                color: Color(0xFFFFA726),
+                                size: 15),
+                            const SizedBox(width: 3),
+                            Text(
+                              rating,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: _brown900,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(8),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      cafe['alamat'] ?? 'Alamat tidak tersedia',
+                      style: const TextStyle(
+                          color: _brown400, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius:
+                                BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Text(
+                                "Open",
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: const Text(
-                          "Open",
+                        const SizedBox(width: 8),
+                        const Icon(Icons.location_on_rounded,
+                            color: _brown400, size: 13),
+                        const SizedBox(width: 3),
+                        const Text(
+                          "Nearby",
                           style: TextStyle(
-                            color: Colors.green,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            color: _brown400,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  size: 14, color: _brown400),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ================= MAPS (LBS) =================
+// ─────────────────────────────────────────────────────────
+// CAFE MAPS SCREEN (UI TIDAK DIUBAH, HANYA WARNA SYNC)
+// ─────────────────────────────────────────────────────────
 
 class CafeMapsScreen extends StatefulWidget {
   const CafeMapsScreen({super.key});
@@ -520,15 +651,12 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) return;
     }
-
     if (permission == LocationPermission.deniedForever) return;
 
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
-    setState(() {
-      _currentPosition = position;
-    });
+    setState(() => _currentPosition = position);
   }
 
   Future<void> fetchCafes() async {
@@ -540,30 +668,27 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
       });
     } catch (e) {
       print("Error maps: $e");
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
 
   String _calculateDistance(double cafeLat, double cafeLng) {
     if (_currentPosition == null) return "Jarak tidak diketahui";
-
     final Distance distance = const Distance();
     final double meter = distance(
       LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
       LatLng(cafeLat, cafeLng),
     );
-
     if (meter < 1000) {
-      return "${meter.toInt()} Meter dari lokasimu";
+      return "${meter.toInt()} Meter";
     } else {
-      return "${(meter / 1000).toStringAsFixed(1)} KM dari lokasimu";
+      return "${(meter / 1000).toStringAsFixed(1)} KM";
     }
   }
 
   void _showCafeDetails(Map cafe, double lat, double lng) {
-    String rating = cafe['rating'] != null ? cafe['rating'].toString() : "4.5";
+    String rating =
+        cafe['rating'] != null ? cafe['rating'].toString() : "4.5";
     String? fotoUrl = cafe['foto_url'];
 
     showModalBottomSheet(
@@ -571,10 +696,11 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          padding: const EdgeInsets.all(25),
+          padding: const EdgeInsets.all(24),
           decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            color: _cardBg,
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -582,10 +708,10 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
             children: [
               Center(
                 child: Container(
-                  width: 50,
-                  height: 5,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: _inputBorder,
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -594,30 +720,24 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
               Row(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(14),
                     child: Container(
-                      width: 60,
-                      height: 60,
-                      color: Colors.brown[50],
+                      width: 58,
+                      height: 58,
+                      color: const Color(0xFFF3EDE8),
                       child: fotoUrl != null && fotoUrl.isNotEmpty
-                          ? Image.network(
-                              fotoUrl,
+                          ? Image.network(fotoUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
+                              errorBuilder: (_, __, ___) =>
                                   const Icon(
                                     Icons.storefront_rounded,
-                                    size: 30,
-                                    color: Colors.brown,
-                                  ),
-                            )
-                          : const Icon(
-                              Icons.storefront_rounded,
-                              size: 30,
-                              color: Colors.brown,
-                            ),
+                                    color: _brown400,
+                                  ))
+                          : const Icon(Icons.storefront_rounded,
+                              color: _brown400),
                     ),
                   ),
-                  const SizedBox(width: 15),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,30 +745,24 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                         Text(
                           cafe['nama_cafe'] ?? 'Cafe',
                           style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: _brown900,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              color: Colors.orange,
-                              size: 16,
-                            ),
+                            const Icon(Icons.star_rounded,
+                                color: Color(0xFFFFA726), size: 15),
                             const SizedBox(width: 4),
-                            Text(
-                              rating,
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text(rating,
+                                style: const TextStyle(
+                                    color: _brown400,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13)),
                           ],
                         ),
                       ],
@@ -656,52 +770,54 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.all(15),
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(15),
+                  color: _cream,
+                  borderRadius: BorderRadius.circular(14),
+                  border:
+                      Border.all(color: _inputBorder, width: 1.5),
                 ),
                 child: Column(
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.location_on,
-                          color: Colors.redAccent,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
+                        const Icon(Icons.location_on_rounded,
+                            color: Colors.redAccent, size: 18),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            cafe['alamat'] ?? 'Alamat tidak tersedia',
-                            style: TextStyle(
-                              color: Colors.grey[800],
-                              height: 1.4,
-                            ),
+                            cafe['alamat'] ??
+                                'Alamat tidak tersedia',
+                            style: const TextStyle(
+                                color: _brown900,
+                                fontSize: 13,
+                                height: 1.4),
                           ),
                         ),
                       ],
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 10),
-                      child: Divider(height: 1),
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(
+                          height: 1,
+                          color: _inputBorder,
+                          thickness: 1),
                     ),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.directions_walk_rounded,
-                          color: Colors.brown,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
+                        const Icon(Icons.directions_walk_rounded,
+                            color: _brown700, size: 18),
+                        const SizedBox(width: 8),
                         Text(
                           _calculateDistance(lat, lng),
                           style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.brown,
+                            fontWeight: FontWeight.w700,
+                            color: _brown700,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -709,16 +825,16 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 25),
+              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
-                height: 55,
+                height: 52,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.brown[700],
+                    backgroundColor: _brown900,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                        borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
                   ),
                   onPressed: () {
@@ -736,14 +852,11 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                   child: const Text(
                     "Lihat Menu & Booking",
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        fontSize: 15, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
             ],
           ),
         );
@@ -754,12 +867,14 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
   @override
   Widget build(BuildContext context) {
     LatLng mapCenter = _currentPosition != null
-        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+        ? LatLng(
+            _currentPosition!.latitude, _currentPosition!.longitude)
         : _defaultCenter;
 
     return Scaffold(
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.brown))
+          ? const Center(
+              child: CircularProgressIndicator(color: _brown700))
           : Stack(
               children: [
                 FlutterMap(
@@ -785,7 +900,8 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                             height: 60,
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.2),
+                                color:
+                                    Colors.blue.withOpacity(0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -797,10 +913,12 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                           ),
                         ...cafes.map((cafe) {
                           double lat = cafe['latitude'] != null
-                              ? double.parse(cafe['latitude'].toString())
+                              ? double.parse(
+                                  cafe['latitude'].toString())
                               : _defaultCenter.latitude;
                           double lng = cafe['longitude'] != null
-                              ? double.parse(cafe['longitude'].toString())
+                              ? double.parse(
+                                  cafe['longitude'].toString())
                               : _defaultCenter.longitude;
 
                           return Marker(
@@ -808,10 +926,11 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                             width: 50,
                             height: 50,
                             child: GestureDetector(
-                              onTap: () => _showCafeDetails(cafe, lat, lng),
+                              onTap: () =>
+                                  _showCafeDetails(cafe, lat, lng),
                               child: const Icon(
                                 Icons.location_pin,
-                                color: Colors.brown,
+                                color: _brown700,
                                 size: 45,
                               ),
                             ),
@@ -821,14 +940,15 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
                     ),
                   ],
                 ),
-                
                 Positioned(
                   bottom: 30,
                   right: 20,
                   child: FloatingActionButton(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.brown[700],
+                    backgroundColor: _cardBg,
+                    foregroundColor: _brown700,
                     elevation: 4,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     onPressed: _getCurrentLocation,
                     child: const Icon(Icons.my_location_rounded),
                   ),
@@ -839,18 +959,21 @@ class _CafeMapsScreenState extends State<CafeMapsScreen> {
   }
 }
 
-// ================= WIDGET REKOMENDASI SMART MENU AI/ML =================
+// ─────────────────────────────────────────────────────────
+// RECOMMENDATION SECTION (REDESIGNED)
+// ─────────────────────────────────────────────────────────
 
 class RecommendationSection extends StatefulWidget {
   final String userId;
-
   const RecommendationSection({super.key, required this.userId});
 
   @override
-  State<RecommendationSection> createState() => _RecommendationSectionState();
+  State<RecommendationSection> createState() =>
+      _RecommendationSectionState();
 }
 
-class _RecommendationSectionState extends State<RecommendationSection> {
+class _RecommendationSectionState
+    extends State<RecommendationSection> {
   String sectionTitle = "Memuat rekomendasi...";
   List recommendedMenus = [];
   bool isLoading = true;
@@ -865,12 +988,11 @@ class _RecommendationSectionState extends State<RecommendationSection> {
     try {
       String baseUrl = "http://10.0.2.2:3000/api";
       try {
-        baseUrl = ApiConfig.baseUrl; // Menggunakan konfigurasi dinamis milikmu jika tersedia
-      } catch (e) {
-        // Fallback jika ApiConfig bermasalah
-      }
+        baseUrl = ApiConfig.baseUrl;
+      } catch (e) {}
 
-      final url = Uri.parse('$baseUrl/recommendations/${widget.userId}');
+      final url =
+          Uri.parse('$baseUrl/recommendations/${widget.userId}');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -888,7 +1010,7 @@ class _RecommendationSectionState extends State<RecommendationSection> {
     } catch (e) {
       print("Error Recommendation UI: $e");
       setState(() {
-        sectionTitle = "Gagal memuat rekomendasi";
+        sectionTitle = "Rekomendasi untuk kamu";
         isLoading = false;
       });
     }
@@ -900,29 +1022,51 @@ class _RecommendationSectionState extends State<RecommendationSection> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(10.0),
-          child: CircularProgressIndicator(color: Colors.brown),
+          child: CircularProgressIndicator(color: _brown700),
         ),
       );
     }
 
-    if (recommendedMenus.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (recommendedMenus.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          sectionTitle,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                sectionTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _brown900,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome_rounded,
+                    size: 14, color: _brown400),
+                const SizedBox(width: 4),
+                const Text(
+                  "AI Pick",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _brown400,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         SizedBox(
-          height: 175, // Ditinggikan sedikit agar muat teks nama kafe
+          height: 188,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: recommendedMenus.length,
@@ -930,71 +1074,88 @@ class _RecommendationSectionState extends State<RecommendationSection> {
               final menu = recommendedMenus[index];
               return GestureDetector(
                 onTap: () {
-                  // 🔥 AKSI KLIK: Berpindah ke MenuScreen asal kafe dengan melempar cafeId dan cafeName
                   if (menu['cafe_id'] != null) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => MenuScreen(
                           cafeId: menu['cafe_id'],
-                          cafeName: menu['nama_cafe'] ?? 'Cafe Rekomendasi',
+                          cafeName:
+                              menu['nama_cafe'] ?? 'Cafe',
                         ),
                       ),
                     );
                   }
                 },
-                child: Card(
-                  elevation: 0,
-                  color: Colors.white,
-                  margin: const EdgeInsets.only(right: 15, bottom: 5),
-                  shape: RoundedRectangleBorder(
+                child: Container(
+                  width: 140,
+                  margin: const EdgeInsets.only(right: 14),
+                  decoration: BoxDecoration(
+                    color: _cardBg,
                     borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: Colors.grey.withOpacity(0.15)),
+                    border: Border.all(
+                        color: _inputBorder, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _brown900.withOpacity(0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-                  child: Container(
-                    width: 135,
+                  child: Padding(
                     padding: const EdgeInsets.all(10),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius:
+                              BorderRadius.circular(14),
                           child: Container(
                             width: double.infinity,
-                            height: 80,
-                            color: Colors.brown[50],
-                            child: menu['foto_url'] != null && menu['foto_url'].toString().isNotEmpty
+                            height: 90,
+                            color:
+                                const Color(0xFFF3EDE8),
+                            child: menu['foto_url'] != null &&
+                                    menu['foto_url']
+                                        .toString()
+                                        .isNotEmpty
                                 ? Image.network(
                                     menu['foto_url'],
                                     fit: BoxFit.cover,
-                                    errorBuilder: (ctx, err, stack) => const Icon(
+                                    errorBuilder:
+                                        (_, __, ___) =>
+                                            const Icon(
                                       Icons.coffee_rounded,
-                                      color: Colors.brown,
+                                      color: _brown400,
+                                      size: 32,
                                     ),
                                   )
                                 : const Icon(
                                     Icons.coffee_rounded,
-                                    color: Colors.brown,
+                                    color: _brown400,
+                                    size: 32,
                                   ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Text(
                           menu['nama_menu'] ?? 'Menu',
                           style: const TextStyle(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                             fontSize: 13,
+                            color: _brown900,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
-                        // 🔥 SUBTITLE NAMA KAFE (Kecil & Abu-abu)
                         Text(
                           menu['nama_cafe'] ?? '',
                           style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 10,
+                            color: _brown400,
+                            fontSize: 11,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1002,10 +1163,10 @@ class _RecommendationSectionState extends State<RecommendationSection> {
                         const Spacer(),
                         Text(
                           "Rp ${menu['harga'].toString().replaceAll('.00', '')}",
-                          style: TextStyle(
-                            color: Colors.brown[700],
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                          style: const TextStyle(
+                            color: _brown700,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
                           ),
                         ),
                       ],
