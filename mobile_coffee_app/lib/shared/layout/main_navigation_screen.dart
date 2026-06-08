@@ -1052,14 +1052,6 @@ class _RecommendationSectionState
                 const Icon(Icons.auto_awesome_rounded,
                     size: 14, color: _brown400),
                 const SizedBox(width: 4),
-                const Text(
-                  "AI Pick",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: _brown400,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
               ],
             ),
           ],

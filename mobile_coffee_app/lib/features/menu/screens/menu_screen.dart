@@ -36,7 +36,7 @@ class _MenuScreenState extends State<MenuScreen>
   };
 
   int _selectedCategoryIndex = 0;
-  final List<String> _categories = ["All", "Kopi", "Teh", "Susu", "Snack"];
+  final List<String> _categories = ["All", "Kopi", "Teh", "Susu"];
 
   // ─── Design Tokens ──────────────────────────────────────
   static const _brown900 = Color(0xFF3E2723);

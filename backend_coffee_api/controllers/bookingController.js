@@ -27,7 +27,6 @@ exports.createFullBooking = (req, res) => {
     `;
 
     db.query(checkTableQuery, [table_id, tanggal_booking, jam_selesai, jam_mulai, jam_mulai, jam_selesai], (err, bookedTables) => {
-        if (err) return res.status(500).json({ error: err.message });
 
         if (bookedTables.length > 0) {
             return res.status(400).json({ message: 'Maaf, meja ini sudah dibooking pada jam tersebut.' });
